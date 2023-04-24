@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=UTF-8>
+<title>User Portal</title>
+<link rel="stylesheet" href="<TMPL_VAR BASEPATH ESCAPE=HTML>/sqluserportal.css">
+<TMPL_IF NAME=WEBAUTHN>
+<script type="text/javascript">
+//<![CDATA[
+function sleep(milliseconds) {  
+	return new Promise(resolve => setTimeout(resolve, milliseconds));  
+}
+
+function update_msg(success, message, result = "") {
+	var msgelm;
+	try {
+		msgelm = document.getElementById("message");
+		msgelm.textContent = message;
+		msgelm.className = success ? "success" : "failure";
+		if (success) {
+			window.setTimeout(function(){ window.location = window.location; }, 1000);
+		}
+		else {
+			switch (result) {
+			case "expired":
+				window.setTimeout(function(){ window.location = 'expired'; }, 2000);
+				break;
+			case "error":
+				window.setTimeout(function(){ window.location = 'error'; }, 3000);
+				break;
+			case "badauth":
+				window.setTimeout(function(){ window.location = 'expired'; }, 3000);
+				break;
+			default:
+				buttons = document.getElementById("buttons");
+				buttons.style.visibility = "visible";
+				buttons.style.display = "inline";
+			}
+		}
+	} catch(e) {
+		alert("An error occurred: " + e + " (please ensure your browser is updated)");
+		if (message !== null) {
+			alert("Operation result: " + message);
+		}
+		window.location = 'error';
+	}
+}
+
+function detectWebAuthnSupport() {
+	if (window.PublicKeyCredential === undefined ||
+            typeof window.PublicKeyCredential !== "function") {
+		var errorMessage = "This browser does not support WebAuthn. Please change your default browser to a more recent one."
+		if (window.location.protocol === "http:" && (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1")) {
+			errorMessage = "Unsupported insecure connection detected."
+		}
+		update_msg(false, errorMessage);
+		return false;
+	}
+	return true;
+}
+
+function reply(r) {
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", window.location.href, true);
+	xhr.onload = function (e) {
+		if (xhr.readyState === 4) {
+			var success = false;
+			var message = "Failure";
+			var submessage;
+			if (xhr.status !== 200) {
+				message = xhr.statusText;
+			}
+			var robj;
+			try {
+				robj = JSON.parse(xhr.responseText);
+				message = robj.message;
+				success = (robj.result == "ok");
+			} catch(e) {
+				message = e;
+				success = false;
+			}
+			update_msg(success, message, robj.result);
+		}
+	};
+	xhr.onerror = function (e) {
+		update_msg(false, xhr.statusText);
+	};
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.send(JSON.stringify(r));
+}
+
+function arrayBufferToStr(buf) {
+    return String.fromCharCode.apply(null, new Uint8Array(buf));
+}
+
+async function authorize() {
+	const publicKeyCredentialRequestOptions = {
+		challenge: new Uint8Array(<TMPL_VAR CHALLENGE ESCAPE=JS>),
+		rpID: "<TMPL_VAR RP_ID ESCAPE=JS>",
+		allowCredentials: [{
+			id: new Uint8Array(<TMPL_VAR CREDENTIAL_ID ESCAPE=JS>),
+			type: 'public-key',
+		}],
+		timeout: <TMPL_VAR TIMEOUT ESCAPE=JS>,
+	};
+
+	var assertion;
+	var error;
+	var failed;
+	for (let i = 0; i < 3; i++) {
+		failed = false;
+		assertion = await navigator.credentials.get({
+			publicKey: publicKeyCredentialRequestOptions
+		}).catch(e => { failed = true; error = e.message; });
+		if (!failed) {
+			reply({
+				data: btoa(arrayBufferToStr(assertion.response.clientDataJSON)),
+				authenticator_data: btoa(arrayBufferToStr(assertion.response.authenticatorData)),
+				signature: btoa(arrayBufferToStr(assertion.response.signature)),
+			});
+			break;
+		}
+		await sleep(1000);
+	}
+	if (failed) {
+		update_msg(false, error);
+	}
+}
+
+function run() {
+	if (!detectWebAuthnSupport()) {
+		return;
+	}
+	authorize();
+}
+//]]>
+</script>
+</TMPL_IF>
+</head>
+<body class="body-main"<TMPL_IF NAME=WEBAUTHN> onload="run();"</TMPL_IF>>
+  <div class="promptouterbox">
+    <div class="promptinnerbox">
+<TMPL_IF NAME=SUCCESS><div class="success"><TMPL_VAR SUCCESS ESCAPE=HTML></div></TMPL_IF>
+<TMPL_IF NAME=INFO><div class="info"><TMPL_VAR INFO ESCAPE=HTML></div></TMPL_IF>
+<TMPL_IF NAME=ERROR><div class="failure"><TMPL_VAR ERROR ESCAPE=HTML></div></TMPL_IF>
+      <form method="post" action="<TMPL_VAR BASEPATH ESCAPE=HTML>/">
+<TMPL_IF NAME=LOGIN>
+        <div class="formfield">
+          <div class="formrow">
+            <label class="fieldlabel" for="uname">Username</label>
+            <input class="fieldinput" type="text" placeholder="Enter Username" name="uname" required="1" autofocus="1" />
+          </div>
+          <div class="formrow">
+            <label class="fieldlabel" for="psw" class="fieldlabel">Password</label>
+            <input class="fieldinput" type="password" placeholder="Enter Password" name="psw" required="1" />
+          </div>
+        </div>
+        <div class="buttonlist">
+          <button type="submit" class="opbutton" name="login" value="1">Login</button>
+        </div>
+</TMPL_IF>
+<TMPL_IF NAME=WEBAUTHN>
+        <div class="opheader" id="message">Please activate your MFA device</div>
+        <div class="buttonlist" hidden="1" id="buttons">
+          <button type="submit" class="opbutton" name="retry" value="1">Retry</button>
+          <button type="submit" class="opbutton" name="logout" value="1">Logout</button>
+        </div>
+</TMPL_IF>
+<TMPL_IF NAME=TOTP>
+        <div class="formfield">
+          <div class="formrow">
+            <label class="fieldlabel" for="code">Code</label>
+            <input class="fieldinput" type="text" placeholder="Enter Autenticator Code" name="code" required="1" autofocus="1" />
+          </div>
+        </div>
+        <div class="buttonlist">
+          <button type="submit" class="opbutton" name="authenticate" value="1">Authenticate</button>
+          <button type="submit" class="opbutton" name="logout" formnovalidate="1" value="1">Logout</button>
+        </div>
+</TMPL_IF>
+<TMPL_IF NAME=MENU>
+        <div class="opheader">Please choose an option</div>
+        <div class="buttonlist">
+          <button type="submit" class="opbutton" name="change_pass" value="1">Change Password</button>
+          <button type="submit" class="opbutton" name="logout" value="1">Logout</button>
+        </div>
+</TMPL_IF>
+<TMPL_IF NAME=PASSWORD>
+        <div class="description">New password must have at least:<ul><li>8 characters</li><li>one lower character</li><li>one upper character</li><li>one digit</li><li>one special character</li></ul></div>
+        <div class="formfield">
+          <div class="formrow">
+            <label class="fieldlabel" for="oldpsw" class="fieldlabel">Old Password</label>
+            <input class="fieldinput" type="password" placeholder="Old Password" name="oldpsw" required="1" autofocus="1" />
+          </div>
+          <div class="formrow">
+            <label class="fieldlabel" for="newpsw" class="fieldlabel">New Password</label>
+            <input class="fieldinput" type="password" placeholder="New Password" name="newpsw" required="1" />
+          </div>
+          <div class="formrow">
+            <label class="fieldlabel" for="newpswconfirm" class="fieldlabel">Confirm Password</label>
+            <input class="fieldinput" type="password" placeholder="Confirm Password" name="newpswconfirm" required="1" />
+          </div>
+        </div>
+        <div class="buttonlist">
+          <button type="submit" class="opbutton" name="change_password" value="1">Change Password</button>
+          <button type="submit" class="opbutton" name="cancel" formnovalidate="1" value="1">Cancel</button>
+        </div>
+</TMPL_IF>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

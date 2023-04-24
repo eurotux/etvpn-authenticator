@@ -1,0 +1,95 @@
+body {
+    font-family: sans-serif;
+    color:  #111111;
+}
+
+.body-main {
+    background-color: #DDDDDD;
+}
+
+.promptouterbox {
+    display: flex;
+    min-height: 100vh;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.promptinnerbox {
+    display: inline; 
+    background-color: #FFFFFF;
+    padding: 20px;
+    border-style: solid;
+    border-width: 4px;
+    border-color: #E00000;
+}
+
+.description {
+    margin: 2px;
+    padding: 0;
+    text-align: left;
+}
+
+.description ul {
+    margin: 0 0 1em 0;
+    padding: 0;
+    text-align: left;
+}
+
+.description li {
+    margin: 0 0 0 2em;
+    padding: 0;
+    text-align: left;
+}
+
+.opheader {
+    margin: 5px;
+    color: #000000;
+    font-weight: bold;
+}
+
+.formfields {
+    display: table;
+}
+
+.formrow {
+    display: table-row;
+}
+
+.fieldlabel {
+    margin: 5px;
+    display: table-cell;
+    color: #000000;
+    font-weight: bold;
+}
+
+.fieldinput {
+    margin: 5px;
+    display: table-cell;
+}
+
+.opbutton {
+    margin: 5px;
+}
+
+.buttonlist {
+    margin: 5px;
+    text-align: center;
+}
+
+.info {
+    margin: 5px;
+    color: #00008B;
+    font-size: 0.8em;
+}
+
+.success {
+    margin: 5px;
+    color: #008B00;
+}
+
+.failure {
+    margin: 5px;
+    color: #8B0000;
+    margin: 5px;
+}

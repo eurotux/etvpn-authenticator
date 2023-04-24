@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenVPN MFA authentication default service launcher
+BindsTo=etux-vpnserver-auth@etux-vpnserver.service
+PropagatesReloadTo=etux-vpnserver-auth@etux-vpnserver.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecReload=/bin/true
+RemainAfterExit=on
+
+[Install]
+WantedBy=multi-user.target

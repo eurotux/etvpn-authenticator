@@ -1,0 +1,42 @@
+body {
+    font-family: sans-serif;
+}
+
+.body-register {
+    background-color: #770000;
+}
+
+.body-authorize {
+    background-color: #000099;
+}
+
+.promptouterbox {
+    display: flex;
+    min-height: 100vh;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.promptinnerbox {
+    display: inline; 
+    background-color: #FFFFFF;
+    padding: 20px;
+}
+
+.prompt {
+    color: #000000;
+}
+
+.info {
+    color: #00008B;
+    font-size: 0.8em;
+}
+
+.success {
+    color: #008B00;
+}
+
+.failure {
+    color: #8B0000;
+}

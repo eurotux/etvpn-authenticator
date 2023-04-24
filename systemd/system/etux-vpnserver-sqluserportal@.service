@@ -1,0 +1,20 @@
+[Unit]
+Description=OpenVPN MFA User Self-Service Portal daemon service %i
+After=network-online.target syslog.target
+
+[Service]
+Type=simple
+KillMode=control-group
+ExecStart=/usr/libexec/etvpn/etux-vpnserver-sqluserportal -c /etc/etvpn/%i.ini
+ExecReload=/bin/kill -HUP $MAINPID
+User=etvpnsql
+Group=etvpnsql
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=etux-vpnserver-sqluserportal@%i
+RestartSec=5s
+Restart=always
+RestartPreventExitStatus=99
+
+[Install]
+WantedBy=multi-user.target

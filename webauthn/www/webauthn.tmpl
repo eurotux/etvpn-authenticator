@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset=UTF-8>
+<title><TMPL_VAR NAME=TITLE></title>
+<link rel="stylesheet" href="<TMPL_VAR BASEPATH ESCAPE=HTML>/etvpn.css">
+<script type="text/javascript">
+//<![CDATA[
+function sleep(milliseconds) {  
+	return new Promise(resolve => setTimeout(resolve, milliseconds));  
+}
+
+function update_msg(success, message, submessage = null) {
+	var msgelm;
+	try {
+		msgelm = document.getElementById("message");
+		msgelm.textContent = message;
+		msgelm.className = success ? "success" : "failure";
+		if (submessage !== null) {
+			var addelm = document.getElementById("additional");
+			addelm.setAttribute('style', 'white-space: pre;');
+			addelm.textContent = submessage;
+		}
+	} catch(e) {
+		alert("An error occurred: " + e + " (please ensure your browser is updated)");
+		if (message !== null) {
+			alert("Operation result: " + message);
+		}
+	}
+}
+
+function detectWebAuthnSupport() {
+	if (window.PublicKeyCredential === undefined ||
+            typeof window.PublicKeyCredential !== "function") {
+		var errorMessage = "This browser does not support WebAuthn. Please change your default browser to a more recent one."
+		if (window.location.protocol === "http:" && (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1")) {
+			errorMessage = "Unsupported insecure connection detected."
+		}
+		update_msg(false, errorMessage);
+		return false;
+	}
+	return true;
+}
+
+function reply(r) {
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", window.location.href, true);
+	xhr.onload = function (e) {
+		if (xhr.readyState === 4) {
+			var success = false;
+			var message = "Failure";
+			var submessage;
+			if (xhr.status !== 200) {
+				message = xhr.statusText;
+			}
+			var robj;
+			try {
+				robj = JSON.parse(xhr.responseText);
+				message = robj.message;
+				if ('submessage' in robj) {
+					submessage = robj.submessage;
+				}
+				success = (robj.result == "OK");
+			} catch(e) {
+				message = e;
+				success = false;
+			}
+			update_msg(success, message, submessage);
+		}
+	};
+	xhr.onerror = function (e) {
+		update_msg(false, xhr.statusText);
+	};
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.send(JSON.stringify(r));
+}
+
+function arrayBufferToStr(buf) {
+    return String.fromCharCode.apply(null, new Uint8Array(buf));
+}
+
+<TMPL_IF NAME=REGISTER>
+async function register() {
+	const publicKeyCredentialCreationOptions = {
+		challenge: new Uint8Array(<TMPL_VAR CHALLENGE ESCAPE=JS>),
+		rp: {
+			id: "<TMPL_VAR RP_ID ESCAPE=JS>",
+			name: "<TMPL_VAR RP_NAME ESCAPE=JS>",
+		},
+		user: {
+			id: new Uint8Array(<TMPL_VAR USER_ID ESCAPE=JS>),
+			name: "<TMPL_VAR USER_NAME ESCAPE=JS>",
+			displayName: "<TMPL_VAR USER_NAME ESCAPE=JS>",
+		},
+		pubKeyCredParams: [{alg: -7, type: "public-key"}],
+		authenticatorSelection: {
+			authenticatorAttachment: "cross-platform",
+		},
+		timeout: <TMPL_VAR TIMEOUT ESCAPE=JS>,
+		attestation: "none"
+	};
+
+	var credential;
+	var error;
+	var failed;
+	for (let i = 0; i < 3; i++) {
+		failed = false;
+		credential = await navigator.credentials.create({
+			publicKey: publicKeyCredentialCreationOptions
+		}).catch(e => { failed = true; error = e.message; });
+		if (!failed) {
+			reply({
+				data: btoa(arrayBufferToStr(credential.response.clientDataJSON)),
+				attestation: btoa(arrayBufferToStr(credential.response.attestationObject)),
+			});
+			break;
+		}
+		await sleep(1000);
+	}
+	if (failed) {
+		update_msg(false, error);
+	}
+}
+<TMPL_ELSE>
+async function authorize() {
+	const publicKeyCredentialRequestOptions = {
+		challenge: new Uint8Array(<TMPL_VAR CHALLENGE ESCAPE=JS>),
+		rpID: "<TMPL_VAR RP_ID ESCAPE=JS>",
+		allowCredentials: [{
+			id: new Uint8Array(<TMPL_VAR CREDENTIAL_ID ESCAPE=JS>),
+			type: 'public-key',
+		}],
+		timeout: <TMPL_VAR TIMEOUT ESCAPE=JS>,
+	};
+
+	var assertion;
+	var error;
+	var failed;
+	for (let i = 0; i < 3; i++) {
+		failed = false;
+		assertion = await navigator.credentials.get({
+			publicKey: publicKeyCredentialRequestOptions
+		}).catch(e => { failed = true; error = e.message; });
+		if (!failed) {
+			reply({
+				data: btoa(arrayBufferToStr(assertion.response.clientDataJSON)),
+				authenticator_data: btoa(arrayBufferToStr(assertion.response.authenticatorData)),
+				signature: btoa(arrayBufferToStr(assertion.response.signature)),
+			});
+			break;
+		}
+		await sleep(1000);
+	}
+	if (failed) {
+		update_msg(false, error);
+	}
+}
+</TMPL_IF>
+
+function run() {
+	if (!detectWebAuthnSupport()) {
+		return;
+	}
+	<TMPL_IF NAME=REGISTER>register();<TMPL_ELSE>authorize();</TMPL_IF>
+}
+//]]>
+</script>
+</head>
+<body class="<TMPL_VAR BODYCLASS ESCAPE=HTML>" onload="run();">
+  <div class="promptouterbox">
+    <div class="promptinnerbox">
+      <div class="prompt" id="message">Please activate your MFA device.</div>
+      <div class="info" id="additional"></div>
+  </div>
+</div>
+</body>
+</html>

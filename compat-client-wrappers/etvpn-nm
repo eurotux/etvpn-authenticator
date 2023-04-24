@@ -1,0 +1,115 @@
+#!/usr/bin/expect -f
+# ETVPN Authenticator for OpenVPN servers
+# Copyright (C) 2023 Eurotux Informática S.A.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+log_user 0
+
+set browser xdg-open
+set reconnect 5
+
+if { [llength $argv] < 1 } {
+	send_error "Usage:\n\t$argv0 networkmanager_connection_name\n\n"
+	exit 3
+}
+
+set conname [lindex $argv 0]
+
+set timeout 30
+
+
+proc trim_show {msg} {
+	# attempt to trim some extra whitespaces from nmcli output
+	set out [string trimleft [string trim $msg]]
+	if { [string length $out] > 0 } {
+		send_user "$out\n"
+	}
+}
+
+proc conndown {} {
+	global conname
+	catch {exec nmcli connection down $conname}
+}
+
+
+set ovpn [spawn -noecho env LANG=en_US.UTF8 LC_LOCAL= LC_ALL= nmcli --ask --wait 300 connection up $conname]
+trap {
+	send_user "Operation canceled\n"
+	conndown
+	send "\r"
+	send \x03
+	if {[info exists ovpn]} {
+		catch {close $ovpn}
+	}
+	exit
+} SIGINT
+
+set oldurl ""
+set browser_opened 0
+set force_cleanup 0
+set had_error [catch {
+	expect {
+		-re ".* authorize at (https://\[^ \]+)" {
+			set url $expect_out(1,string)
+			if { $url != $oldurl } {
+				set oldurl $url
+				set browser_opened 1
+				exec -ignorestderr $browser $url >/dev/null 2>/dev/null &
+				send_user "Browser opened $url - please proceed there...\n"
+			}
+			# skip password prompt
+			sleep $reconnect
+			expect -re "\[^\r\]+: *$"
+			send_user "Retrying connection...\n"
+			send "\r"
+			exp_continue
+		}
+		-re ".*( need to authenticate| password is required|vpn\\.secrets\\.password.*:).*?\r?" {
+			if ($browser_opened) {
+				# if a password prompt is found outside of last scope and after browser opened, something failed
+				conndown
+				send_user "Failed - please try again\n"
+			} else {
+				# in case the regular password isn't saved, allow user to enter it
+				trim_show $expect_out(0,string)
+				stty -echo
+				interact {
+					-u tty_spawn_id
+						eof { set force_cleanup 1; return }
+						"\x03" { send \x03; set force_cleanup 1; return }
+						"\r" { if {!$force_cleanup} {send "\r"}; return }
+				}
+				stty echo
+				exp_continue
+			}
+		}
+		-re ".+" {
+			trim_show $expect_out(0,string)
+			exp_continue
+		}
+		timeout {
+			conndown
+			send_user "Timeout - please try again\n"
+		}
+		eof
+	}
+	wait
+}]
+
+if {$had_error || $force_cleanup} {
+	send_user "\nCleaning up...\n"
+	conndown
+}

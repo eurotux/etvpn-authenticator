@@ -1,0 +1,13 @@
+[Unit]
+Description=OpenVPN MFA User Self-Service Portal daemon default service launcher
+BindsTo=etux-vpnserver-sqluserportal@sqluserportal.service
+PropagatesReloadTo=etux-vpnserver-sqluserportal@sqluserportal.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/true
+ExecReload=/bin/true
+RemainAfterExit=on
+
+[Install]
+WantedBy=multi-user.target

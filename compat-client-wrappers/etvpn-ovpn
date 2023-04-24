@@ -1,0 +1,84 @@
+#!/usr/bin/expect -f
+# ETVPN Authenticator for OpenVPN servers
+# Copyright (C) 2023 Eurotux Informática S.A.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+set openvpn_bin openvpn
+set browser xdg-open
+set reconnect 5
+
+if { [llength $argv] < 1 } {
+	send_error "Usage:\n\t$argv0 openvpn_config_file.ovpn \[...extra openvpn arguments...\]\n"
+	send_error "\nExample:\n\t$argv0 ~/vpns/work.ovpn --verb 3\n\n"
+	exit 3
+}
+
+set ovpn_file [lindex $argv 0]
+
+set timeout 30
+set ovpn [spawn -noecho sudo $openvpn_bin --config $ovpn_file {*}[lrange $argv 1 end] ]
+trap {
+	send \x03
+	if {[info exists ovpn]} {
+		catch {close $ovpn}
+	}
+} SIGINT
+
+set oldurl ""
+expect {
+        -re "\\\[sudo\\\].*:" {
+                stty -echo
+                interact -u tty_spawn_id -o "\r" return
+                log_user 0
+                stty echo
+                puts ""
+                exp_continue
+        }
+	-re "CHALLENGE: Please authorize at (https://\[^ \]+) .*" {
+		set url $expect_out(1,string)
+		if { $url != $oldurl } {
+			set oldurl $url
+			exec $browser $url
+			send_user "\nBrowser opened $url - please proceed there...\n"
+		}
+		sleep $reconnect
+		send_user "\nRetrying connection...\n"
+		send "\r"
+		exp_continue
+	}
+	-re "(?i)auth (?:username|password):.*" {
+		send_user $expect_out(0,string)
+		interact -u tty_spawn_id -o "\r" return
+		send_user "\n"
+		exp_continue
+	}
+	-re ".*PUSH_REPLY.*" {
+		# connection successfull
+		send_user $expect_out(0,string)
+		set timeout -1
+		exp_continue
+	}
+	-re ".+" {
+		send_user $expect_out(0,string)
+		exp_continue
+	}
+	timeout {
+		send \x03
+		send_user "Timeout - please try again\n"
+	}
+	eof
+}
+wait
