@@ -196,9 +196,11 @@ sub clear_session_id($$) {
 	my ($u, $sid) = @_;
 
 	if (defined($sid) && exists($challenge_sessions{$u})) {
-		# ensure any challenge object on the login object is unreferenced and destroyed first
-		# so that when its destructor is invoked any log prefix is still valid
-		$challenge_sessions{$u}{$sid}->[0]->set_associated_challenge(undef);
+		if (defined($challenge_sessions{$u}{$sid})) {
+			# ensure any challenge object on the login object is unreferenced and destroyed first
+			# so that when its destructor is invoked any log prefix is still valid
+			$challenge_sessions{$u}{$sid}->[0]->set_associated_challenge(undef);
+		}
 		# delete the session
 		delete $challenge_sessions{$u}{$sid};
 		if (ref($challenge_sessions{$u}) ne 'HASH' || keys %{$challenge_sessions{$u}} == 0) {
