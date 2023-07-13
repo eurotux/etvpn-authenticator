@@ -22,7 +22,7 @@ Release:        1%{?dist}
 Summary:        ETVPN Authenticator suite for OpenVPN servers
 
 License:        GPLv2
-URL:            http://www.eurotux.com/
+URL:            https://github.com/eurotux/etvpn-authenticator
 Source0:        %{name}-%{version}.tar.gz
 
 BuildArch:      noarch
