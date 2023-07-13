@@ -361,7 +361,7 @@ done
 
 
 %changelog
-* Tue Jul 13 2023 Rodrigo Araujo <roa@eurotux.com> - 0.7.1
+* Thu Jul 13 2023 Rodrigo Araujo <roa@eurotux.com> - 0.7.1
 - Update to version 0.7.1
 
 * Tue Apr 25 2023 Rodrigo Araujo <roa@eurotux.com> - 0.7
