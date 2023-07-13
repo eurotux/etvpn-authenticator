@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-package ETVPN::IPPool::SQL 0.7;
+package ETVPN::IPPool::SQL 0.7.1;
 use strict;
 use warnings;
 use parent qw(ETVPN::IPPool::Base);
