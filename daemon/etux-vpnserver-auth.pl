@@ -603,9 +603,12 @@ sub authorize_client($$$) {
 	my ($cid, $kid, $auth_login) = @_;
 	print $mgmt_h "client-auth $cid $kid\r\n";
 
-	my $verified_sid = ($auth_login->get_auth_data())[1];
-	$mgmt_clients{$cid}->{'verified_sid'} = $verified_sid;
-	$verified_sids{$user_login}{$verified_sid} = $cid;
+	my ($user_login_name, $verified_sid) = $auth_login->get_auth_data();
+	if (defined($verified_sid)) {
+		# verified session exists, enable reauth support
+		$mgmt_clients{$cid}->{'verified_sid'} = $verified_sid;
+		$verified_sids{$user_login_name}{$verified_sid} = $cid;
+	}
 
 	my $l_env = $auth_login->get_env();
 

@@ -91,7 +91,8 @@ sub set_auth_data {
 
 sub get_auth_data {
 	my $self = shift;
-	return @{$self->[0]->{'auth data'}};
+	my $auth_data = $self->[0]->{'auth data'};
+	return defined($auth_data) ? @{$self->[0]->{'auth data'}} : (undef, undef);
 }
 
 
