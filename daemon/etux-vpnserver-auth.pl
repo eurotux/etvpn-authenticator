@@ -195,7 +195,7 @@ sub check_challenge($$) {
 sub clear_session_id($$) {
 	my ($u, $sid) = @_;
 
-	if (defined($sid) && exists($challenge_sessions{$u})) {
+	if (defined($u) && defined($sid) && exists($challenge_sessions{$u})) {
 		if (defined($challenge_sessions{$u}{$sid})) {
 			# ensure any challenge object on the login object is unreferenced and destroyed first
 			# so that when its destructor is invoked any log prefix is still valid
@@ -213,7 +213,7 @@ sub clear_session_id($$) {
 sub clear_verified_sid($$) {
 	my ($u, $sid) = @_;
 
-	if (defined($sid) && exists($verified_sids{$u})) {
+	if (defined($u) && defined($sid) && exists($verified_sids{$u})) {
 		delete $verified_sids{$u}{$sid};
 		if (ref($verified_sids{$u}) ne 'HASH' || keys %{$verified_sids{$u}} == 0) {
 			# no more verified sids for this user, so also clear that parent entry
@@ -775,6 +775,10 @@ sub process_client_mgmt_event() {
 		free_ippool_address($cid);
 	}
 	else {
+		# cleanup flag - will be set to true on certain conditions below so that data no longer needed is properly
+		# cleared/freed at the end of this sub
+		my $cleanup = 0;
+
 		# add logging prefix related to this client event but ensure level is always restored
 		my $restore_prefix_level = ETVPN::Logger::current_level();
 		# ensure logging format with remote address so additional measures such as fail2ban can be implemented
@@ -795,6 +799,7 @@ sub process_client_mgmt_event() {
 					print $mgmt_h "client-pending-auth $cid ".$client->{'pending_auth'}."\r\n";
 				}
 				else {
+					# fail motive can be a CR challenge
 					deny_client($cid, $kid, $client->{'fail_motive'});
 				}
 			}
@@ -825,6 +830,7 @@ sub process_client_mgmt_event() {
 			}
 			unless ($reauth_ok) {
 				deny_client($cid, $kid);
+				$cleanup = 1;
 			}
 		}
 		elsif ($client_event_type == $CLIENT_CR_RESPONSE) {
@@ -832,8 +838,11 @@ sub process_client_mgmt_event() {
 			my $login_success;
 			my $fail_motive;
 			my $pend_session;
-			my $cleanup = 1;
 			my $r;
+			# when validating a CR RESPONSE, unlike the other client event types, we assume by default it will
+			# fail and thus a cleanup will be needed at the end of this sub; in case of sucess, the cleanup flag
+			# is reset to 0 below
+			$cleanup = 1;
 			if (!defined($pending_auth_sid) || !defined( $pend_session = $challenge_sessions{$user_login}{$pending_auth_sid})) {
 				$fail_motive = 'CR RESPONSE related pending auth session not found or already expired';
 			}
@@ -873,6 +882,7 @@ sub process_client_mgmt_event() {
 							}
 							else {
 								print $mgmt_h "client-pending-auth $cid ".$client->{'pending_auth'}."\r\n";
+								# CR sucesss, reset the cleanup flag to 0
 								$cleanup = 0;
 							}
 						}
@@ -886,21 +896,26 @@ sub process_client_mgmt_event() {
 				ETVPN::Logger::log($fail_motive ? $fail_motive : 'could not validate CRTEXT challenge');
 				deny_client($cid, $kid);
 			}
-			if ($cleanup) {
-				delete($mgmt_clients{$cid});
-				clear_session_id($user_login, $pending_auth_sid);
-				clear_verified_sid($user_login, $pending_auth_sid);
-			}
+		}
+		elsif ($client_event_type == $CLIENT_DISCONNECT) {
+			ETVPN::Logger::log("client disconnect");
+			# $pending_auth_sid is only defined if the related challenge is of pending_auth type
+			# for CRV type challenges it will be undefined so any related session will still persist
+			$cleanup = 1;
 		}
 		else {
-			if ($client_event_type == $CLIENT_DISCONNECT) {
-				ETVPN::Logger::log("client disconnect");
-				# $pending_auth_sid is only defined if the related challenge is of pending_auth type
-				# for CRV type challenges it will be undefined so any related session will still persist
-				clear_session_id($user_login, $pending_auth_sid);
-			}
+			ETVPN::Logger::log("WARNING: unknown event type $client_event_type - this should not happen, please report a issue on https://github.com/eurotux/etvpn-authenticator");
+			$cleanup = 1;
+		}
+
+		if ($cleanup) {
 			delete($mgmt_clients{$cid});
-			clear_verified_sid($user_login, $pending_auth_sid);
+			foreach my $clean_sid ($pending_auth_sid, $verified_sid) {
+				if (defined($clean_sid)) {
+					clear_session_id($user_login, $clean_sid);
+					clear_verified_sid($user_login, $clean_sid);
+				}
+			}
 			free_ippool_address($cid);
 		}
 
