@@ -817,7 +817,8 @@ sub process_client_mgmt_event() {
 			}
 			else {
 				my $client_auth_sid = (decode_password_data($password_data))[1];
-				if ( $client_auth_sid eq $verified_sid &&
+				if ( defined($client_auth_sid) &&
+				     $client_auth_sid eq $verified_sid &&
 				     exists($verified_sids{$user_login}{$client_auth_sid}) &&
 				     $verified_sids{$user_login}{$client_auth_sid} eq $cid ) {
 					$reauth_ok = 1;
