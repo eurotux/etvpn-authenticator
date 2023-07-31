@@ -68,20 +68,31 @@ sub _validate_totp_challenge {
 
 	# google auth and compatible
 	my $hex_secret = join('', unpack '(H2)*', $secret);
-	my $oathcmd = quotemeta($conf->val('oathtool')). ' --totp --digits '.quotemeta($conf->val('otpauth digits')).' '.quotemeta($hex_secret);
-	my $otpcode = `$oathcmd`;
-	if ($? == 0) {
-		{ local $/ = "\n"; chomp $otpcode; }
-		if ($otpcode eq $user_challenge_reply) {
-			ETVPN::Logger::log('otpauth verification successful');
-			return 1;
+	my %valid_codes;
+	my @time_variants = ('');
+	my $tolerance = $conf->val('otpauth tolerance');
+	if ($tolerance > 0) {
+		push @time_variants, ' -S '.quotemeta("-$tolerance sec");
+		push @time_variants, ' -S '.quotemeta("+$tolerance sec");
+	}
+	foreach my $timeopt (@time_variants) {
+		local $ENV{'LANG'} = 'C';
+		my $oathcmd = quotemeta($conf->val('oathtool')).$timeopt.' --totp --digits '.quotemeta($conf->val('otpauth digits')).' '.quotemeta($hex_secret);
+		my $otpcode = `$oathcmd`;
+		if ($? == 0) {
+			{ local $/ = "\n"; chomp $otpcode; }
+			$valid_codes{$otpcode} = 1;
 		}
 		else {
-			$self->add_error('otpauth verification failed');
+			$self->add_internal_error('error executing oathtool');
 			return 0;
 		}
 	}
-	$self->add_internal_error('error executing oathtool');
+	if (exists($valid_codes{$user_challenge_reply})) {
+		ETVPN::Logger::log('otpauth verification successful');
+		return 1;
+	}
+	$self->add_error('otpauth verification failed');
 	return 0;
 }
 

@@ -58,6 +58,7 @@ my %conf_structure = (
 		'otpauth label',
 		'otpauth issuer',
 		['otpauth digits', def => 6, type => 'uint'],
+		['otpauth tolerance', def => 10, type => 'uint'],
 		['qrencoder', def => ''],
 		['pngviewer', def => ''],
 		['qrviewer', def => ''],
