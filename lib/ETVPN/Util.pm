@@ -22,6 +22,8 @@ use warnings;
 use Net::IP qw(:PROC);
 use Bytes::Random::Secure qw(random_string_from);
 
+use ETVPN::Logger;
+
 
 sub ovpn_mgmt_escape($) {
 	my $s = shift;
