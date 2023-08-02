@@ -112,7 +112,7 @@ sub get_user_pool_ip {
 	# TODO: add an option to emulate ifconfig-pool-linear and support p2p topology
 	my $max_ofs = $pool->size() - 2;  # e.g. for a /24 which has a size of 256, max offset = 254
 	my $q_mofs = $dbh->quote($max_ofs);
-	my $q_mcnt = $$q_mofs;
+	my $q_mcnt = $q_mofs;
 	my $ret;
 	my $last_id;
 	my $result = $dbh->do("INSERT INTO $table (pool,pool_offset,username,cid,openvpn_instance,updated) SELECT $q_pool,COALESCE(free_offset, 1),$q_user,$q_cid,$q_ovpn_id,CURRENT_TIMESTAMP FROM ( SELECT COUNT(1) AS c FROM $table WHERE pool=$q_pool ),( SELECT MAX(free_offset) AS free_offset FROM ( SELECT pool_offset+1 AS free_offset FROM $table WHERE pool=$q_pool AND free_offset BETWEEN 1 and $q_mofs AND free_offset NOT IN (SELECT pool_offset FROM $table WHERE pool=$q_pool) ) LIMIT 1 ) WHERE c < $q_mcnt");
