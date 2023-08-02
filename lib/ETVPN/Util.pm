@@ -85,10 +85,22 @@ sub net_peer_ip($$;$) {
 	my ($addr, $mask, $ipver) = @_;
 	$ipver = 4 unless defined($ipver);
 	my $addrbin = ip_iptobin($addr, $ipver);
+	unless (defined($addrbin)) {
+		ETVPN::Logger::log("WARNING: peer IP requested for invalid IPv$ipver address $addr");
+		return undef;
+	}
 	my $maskbin = ip_iptobin($mask, $ipver);
+	unless (defined($maskbin)) {
+		ETVPN::Logger::log("WARNING: invalid netmask $mask while computing peer IP for IPv$ipver address $addr");
+		return undef;
+	}
 	my $netbin = $addrbin & $maskbin;
 	my $add = scalar('0' x ($ipver == 4 ? 31 : 127).'1');
 	my $peerip = new Net::IP(ip_bintoip(ip_binadd($netbin, $add), $ipver), $ipver) or return undef;
+	unless (defined($peerip)) {
+		ETVPN::Logger::log("WARNING: error computing peer IP for IPv$ipver address $addr");
+		return undef;
+	}
 	if ($peerip->ip() eq $addr) {
 		$add = scalar('0' x ($ipver == 4 ? 30 : 126).'10');
 		$peerip = new Net::IP(ip_bintoip(ip_binadd($netbin, $add), $ipver), $ipver) or return undef;
