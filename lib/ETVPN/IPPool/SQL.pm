@@ -110,7 +110,17 @@ sub get_user_pool_ip {
 
 	# reserve a free address and return it
 	# TODO: add an option to emulate ifconfig-pool-linear and support p2p topology
-	my $max_ofs = int($pool->size() - 2);  # e.g. for a /24 which has a size of 256, max offset = 254
+	my $max_ofs = int($pool->size());
+	my $min_ofs;
+	if (defined($pool->mask())) {
+		# pool is a network with mask
+		$min_ofs = 1;   # exclude network address (offset 0)
+		$max_ofs -= 2;  # e.g. for a /24 which has a size of 256, max offset = 254
+	}
+	else {
+		# pool is a range
+		$min_ofs = 0;
+	}
 	my %exclude_offsets;
 	foreach my $excl_addr (@exclude_list) {
 		if (defined($excl_addr)) {
@@ -121,7 +131,7 @@ sub get_user_pool_ip {
 			}
 			if ($pool->overlaps($excl_ip) != $IP_NO_OVERLAP) {
 				my $e_offset = $excl_ip->intip() - $pool->intip();
-				if ($e_offset > 0) {
+				if ($e_offset >= 0) {
 					$exclude_offsets{$e_offset} = 1;
 				}
 			}
@@ -130,14 +140,15 @@ sub get_user_pool_ip {
 	my @exclude_offset_list = keys(%exclude_offsets);
 	my $not_in_exclude_list = @exclude_offset_list ? ' AND free_offset NOT IN ('.join(',', map { int($_) } @exclude_offset_list).')' : '';
 	my $max_count = int($max_ofs - @exclude_offset_list);
-	my $min_ofs;
-	for (my $i = 1; $i <= $max_ofs; $i++) {
-		unless (exists($exclude_offsets{$i})) {
-			$min_ofs = int($i);
+	for (my $i = $min_ofs; $i <= $max_ofs; $i++) {
+		if (exists($exclude_offsets{$i})) {
+			$min_ofs++;
+		}
+		else {
 			last;
 		}
 	}
-	unless (defined($min_ofs)) {
+	if ($min_ofs > $max_ofs) {
 		$self->add_internal_error("IP pool ".$pool->print()." exhausted due to all possible addresses having been excluded while trying to reserve an address for user \"$fulluser\"");
 	}
 
