@@ -145,7 +145,7 @@ sub get_user_pool_ip {
 	my $ret;
 	my $result = $dbh->do("INSERT INTO $table (pool,pool_offset,username,cid,openvpn_instance,updated) SELECT $q_pool,COALESCE(free_offset, $min_ofs),$q_user,$q_cid,$q_ovpn_id,CURRENT_TIMESTAMP FROM ( SELECT COUNT(1) AS c FROM $table WHERE pool=$q_pool ),( SELECT MAX(free_offset) AS free_offset FROM ( SELECT pool_offset+1 AS free_offset FROM $table WHERE pool=$q_pool AND free_offset BETWEEN $min_ofs and $max_ofs AND free_offset NOT IN (SELECT pool_offset FROM $table WHERE pool=$q_pool)".$not_in_exclude_list." ) LIMIT 1 ) WHERE c < $max_count");
 	if (!$result) {
-		$self->add_internal_error('error performing query to reserve a IP pool address for user \"$fulluser\": '.$DBI::errstr);
+		$self->add_internal_error("error performing query to reserve a IP pool address for user \"$fulluser\": ".$DBI::errstr);
 	}
 	elsif ($result eq '0E0' || !( $last_id = $dbh->last_insert_id(undef, undef, $table, 'TABLE') )) {
 		$self->add_internal_error("IP pool ".$pool->print()." exhausted while trying to reserve an address for user \"$fulluser\"");
