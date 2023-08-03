@@ -148,7 +148,7 @@ sub get_user_pool_ip {
 		$self->add_internal_error('error performing query to reserve a IP pool address for user \"$fulluser\": '.$DBI::errstr);
 	}
 	elsif ($result eq '0E0' || !( $last_id = $dbh->last_insert_id(undef, undef, $table, 'TABLE') )) {
-		$self->add_internal_error("IP pool $pool exhausted while trying to reserve an address for user \"$fulluser\"");
+		$self->add_internal_error("IP pool ".$pool->print()." exhausted while trying to reserve an address for user \"$fulluser\"");
 	}
 	elsif (defined( my $row = $dbh->selectrow_arrayref("SELECT pool_offset FROM $table WHERE pool=$q_pool AND id=".$dbh->quote($last_id)) )) {
 		$ret = __ip_from_pool_offset($pool, $row->[0]);
