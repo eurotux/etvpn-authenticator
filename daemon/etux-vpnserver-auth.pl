@@ -389,6 +389,12 @@ sub listen_for_notify_requests() {
 	$select->add($notify_h);
 }
 
+sub register_ippool() {
+	if (defined( my $ippool = $conf->val('ippool') )) {
+		$ippool->register_ovpn_instance($conf->val('management interface address'), $conf->val('management interface port'), $ovpn_pid);
+	}
+}
+
 sub connect_to_management_interface() {
 	my $fully_connected = 0;
 	my $connect_to_wait = $conf->val('management interface connect timeout');
@@ -522,9 +528,6 @@ sub reconnect_to_management_interface() {
 	if (!defined($ovpn_pid) || $ovpn_pid != $new_pid) {
 		# openvpn was restarted, so invalidate every session since client and key ids were reset
 		ETVPN::Logger::log("OpenVPN instance was restarted, new PID is $new_pid");
-		if (defined( my $ippool = $conf->val('ippool') )) {
-			$ippool->register_ovpn_instance($conf->val('management interface address'), $conf->val('management interface port'), $new_pid);
-		}
 		%challenge_sessions = ();
 		%verified_sids = ();
 		%mgmt_clients = ();
@@ -1084,9 +1087,7 @@ $sess_timeout = $conf->val('challenge session timeout');
 $SIG{USR1} = \&throw_reload;
 $ovpn_pid = connect_to_management_interface();
 ETVPN::Logger::log("OpenVPN instance PID is $ovpn_pid");
-if (defined( my $ippool = $conf->get_ip_pool() )) {
-	$ippool->register_ovpn_instance($conf->val('management interface address'), $conf->val('management interface port'), $ovpn_pid);
-}
+register_ippool();
 listen_for_notify_requests();
 
 my $mgmt_prev = '';
@@ -1198,6 +1199,7 @@ while (1) {
 				$notify_h->close();
 				listen_for_notify_requests();
 			}
+			register_ippool();
 			next;
 		}
 		else {
