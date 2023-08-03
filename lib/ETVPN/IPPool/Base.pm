@@ -15,7 +15,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-package ETVPN::IPPool::Base v0.7.1;
+package ETVPN::IPPool::Base v0.7.2;
 use strict;
 use warnings;
 use parent qw(ETVPN::Actionable);
