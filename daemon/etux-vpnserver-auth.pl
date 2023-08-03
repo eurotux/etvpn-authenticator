@@ -620,7 +620,8 @@ sub authorize_client($$$) {
 		}
 		else {
 			if ( defined( my $ippool = $conf->get_ip_pool() )) {
-				$push_ip4 = $ippool->get_user_pool_ip($ip4, $auth_login->get_account_name(), $auth_login->get_realm(), $cid, 4);
+				# get IP from pool but ensure the local server IP is not returned
+				$push_ip4 = $ippool->get_user_pool_ip($ip4, $auth_login->get_account_name(), $auth_login->get_realm(), $cid, 4, $l_env->{'ifconfig_local'});
 			}
 			else {
 				ETVPN::Logger::log("WARNING: ignoring dynamic IP since no ippool is configured");

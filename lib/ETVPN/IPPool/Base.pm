@@ -31,7 +31,7 @@ sub register_ovpn_instance {
 
 sub get_user_pool_ip {
 	# not supposed to be executed on base class
-	# when overriding, it should accept $obj->get_user_pool_ip($username, $pool, $realm, $ipver) and return a Net::IP object
+	# when overriding, it should accept $obj->get_user_pool_ip($username, $pool, $realm, $ipver, @exclude_list) and return a Net::IP object
 	# it also must return an undef value if $self->is_registered() is not a true value
 	ETVPN::Logger::fatal('internal error: ippool base class get_user_pool_ip() called');
 }

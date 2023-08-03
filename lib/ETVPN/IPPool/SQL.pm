@@ -81,7 +81,7 @@ sub __ip_from_pool_offset($$) {
 
 
 sub get_user_pool_ip {
-	my ($self, $pool, $username, $realm, $cid, $ipver) = @_;
+	my ($self, $pool, $username, $realm, $cid, $ipver, @exclude_list) = @_;
 
 	return undef unless $self->is_registered();
 
@@ -110,12 +110,40 @@ sub get_user_pool_ip {
 
 	# reserve a free address and return it
 	# TODO: add an option to emulate ifconfig-pool-linear and support p2p topology
-	my $max_ofs = $pool->size() - 2;  # e.g. for a /24 which has a size of 256, max offset = 254
-	my $q_mofs = $dbh->quote($max_ofs);
-	my $q_mcnt = $q_mofs;
-	my $ret;
+	my $max_ofs = int($pool->size() - 2);  # e.g. for a /24 which has a size of 256, max offset = 254
+	my %exclude_offsets;
+	foreach my $excl_addr (@exclude_list) {
+		if (defined($excl_addr)) {
+			my $excl_ip = new Net::IP($excl_addr, $ipver);
+			unless (defined($excl_ip)) {
+				ETVPN::Logger::log("WARNING: ignoring SQL IP pool exclusion of invalid IPv$ipver address $excl_addr");
+				next;
+			}
+			if ($pool->overlaps($excl_ip) != $IP_NO_OVERLAP) {
+				my $e_offset = $excl_ip->intip() - $pool->intip();
+				if ($e_offset > 0) {
+					$exclude_offsets{$e_offset} = 1;
+				}
+			}
+		}
+	}
+	my @exclude_offset_list = keys(%exclude_offsets);
+	my $not_in_exclude_list = @exclude_offset_list ? ' AND free_offset NOT IN ('.join(',', map { int($_) } @exclude_offset_list).')' : '';
+	my $max_count = int($max_ofs - @exclude_offset_list);
+	my $min_ofs;
+	for (my $i = 1; $i <= $max_ofs; $i++) {
+		unless (exists($exclude_offsets{$i})) {
+			$min_ofs = int($i);
+			last;
+		}
+	}
+	unless (defined($min_ofs)) {
+		$self->add_internal_error("IP pool ".$pool->print()." exhausted due to all possible addresses having been excluded while trying to reserve an address for user \"$fulluser\"");
+	}
+
 	my $last_id;
-	my $result = $dbh->do("INSERT INTO $table (pool,pool_offset,username,cid,openvpn_instance,updated) SELECT $q_pool,COALESCE(free_offset, 1),$q_user,$q_cid,$q_ovpn_id,CURRENT_TIMESTAMP FROM ( SELECT COUNT(1) AS c FROM $table WHERE pool=$q_pool ),( SELECT MAX(free_offset) AS free_offset FROM ( SELECT pool_offset+1 AS free_offset FROM $table WHERE pool=$q_pool AND free_offset BETWEEN 1 and $q_mofs AND free_offset NOT IN (SELECT pool_offset FROM $table WHERE pool=$q_pool) ) LIMIT 1 ) WHERE c < $q_mcnt");
+	my $ret;
+	my $result = $dbh->do("INSERT INTO $table (pool,pool_offset,username,cid,openvpn_instance,updated) SELECT $q_pool,COALESCE(free_offset, $min_ofs),$q_user,$q_cid,$q_ovpn_id,CURRENT_TIMESTAMP FROM ( SELECT COUNT(1) AS c FROM $table WHERE pool=$q_pool ),( SELECT MAX(free_offset) AS free_offset FROM ( SELECT pool_offset+1 AS free_offset FROM $table WHERE pool=$q_pool AND free_offset BETWEEN $min_ofs and $max_ofs AND free_offset NOT IN (SELECT pool_offset FROM $table WHERE pool=$q_pool)".$not_in_exclude_list." ) LIMIT 1 ) WHERE c < $max_count");
 	if (!$result) {
 		$self->add_internal_error('error performing query to reserve a IP pool address for user \"$fulluser\": '.$DBI::errstr);
 	}
