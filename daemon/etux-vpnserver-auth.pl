@@ -251,9 +251,6 @@ sub auth_user_pass_verify() {
 		$login = $backend->validate_login($user_name, $realm , $user_password);
 		my $is_backend_internal_error = $backend->has_internal_error();
 		$internal_error{'BACKEND'} = $is_backend_internal_error;
-		if (defined( my $ippool = $conf->get_ip_pool() )) {
-			$internal_error{'IPPOOL'} = $ippool->has_internal_error();
-		}
 		unless ($login && $login->is_success()) {
 			# ensure 'login failed: ' is only present on non internal error so that a logged bannable error is distinguishable
 			if ($is_backend_internal_error) {
@@ -622,6 +619,9 @@ sub authorize_client($$$) {
 			if ( defined( my $ippool = $conf->get_ip_pool() )) {
 				# get IP from pool but ensure the local server IP is not returned
 				$push_ip4 = $ippool->get_user_pool_ip($ip4, $auth_login->get_account_name(), $auth_login->get_realm(), $cid, 4, $l_env->{'ifconfig_local'});
+				if ( ( $internal_error{'IPPOOL'} = $ippool->has_internal_error() ) ) {
+					ETVPN::Logger::log($ippool->get_errors());
+				}
 			}
 			else {
 				ETVPN::Logger::log("WARNING: ignoring dynamic IP since no ippool is configured");
