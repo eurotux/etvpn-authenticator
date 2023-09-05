@@ -869,6 +869,8 @@ sub process_client_mgmt_event() {
 						ETVPN::Logger::log("pending login successful (CRTEXT challenge)");
 						authorize_client($cid, $kid, $pend_login);
 						$login_success = 1;
+						# CR sucess, reset the cleanup flag to 0
+						$cleanup = 0;
 					}
 					else {
 						# ensure 'login failed: ' is only present on non internal error so that a logged bannable error is distinguishable
@@ -887,7 +889,7 @@ sub process_client_mgmt_event() {
 							}
 							else {
 								print $mgmt_h "client-pending-auth $cid ".$client->{'pending_auth'}."\r\n";
-								# CR sucesss, reset the cleanup flag to 0
+								# CR is still retriable, reset the cleanup flag to 0
 								$cleanup = 0;
 							}
 						}
