@@ -27,6 +27,7 @@ use JSON;
 use MIME::Base64 qw(encode_base64url decode_base64url);
 use IO::Socket qw(AF_INET AF_UNIX);
 use Net::IP;
+use Encode;
 
 use ETVPN::Web;
 use ETVPN::Session;
@@ -418,7 +419,7 @@ my $app = sub {
 			my $p_params = $req->body_parameters;
 			if ($stage eq 'login' && has_button($p_params, 'login')) {
 				# login attempt
-				my ($username, $password) = ($p_params->{'uname'}, $p_params->{'psw'});
+				my ($username, $password) = (decode_utf8($p_params->{'uname'}), decode_utf8($p_params->{'psw'}));
 				unless (defined($username) && defined($password)) {
 					# bannable error
 					return end_request($req, 'tampering attempt: missing login credentials');
@@ -527,7 +528,7 @@ my $app = sub {
 			elsif ($stage eq 'totp') {
 				if (has_button($p_params, 'authenticate')) {
 					# user entered TOTP code
-					my $code = $p_params->{'code'};
+					my $code = decode_utf8($p_params->{'code'});
 					unless (defined($code)) {
 						# bannable error
 						return end_request($req, 'tampering attempt: missing TOTP code');
@@ -568,9 +569,9 @@ my $app = sub {
 			elsif ($stage eq 'change_password') {
 				if (has_button($p_params, 'change_password')) {
 					# user attempted to change password
-					my $oldpsw = $p_params->{'oldpsw'};
-					my $newpsw =$p_params->{'newpsw'};
-					my $newpswconfirm = $p_params->{'newpswconfirm'};
+					my $oldpsw = decode_utf8($p_params->{'oldpsw'});
+					my $newpsw = decode_utf8($p_params->{'newpsw'});
+					my $newpswconfirm = decode_utf8($p_params->{'newpswconfirm'});
 					unless (defined($oldpsw) && defined($newpsw) && defined($newpswconfirm)) {
 						# bannable error
 						return end_request($req, 'tampering attempt: missing fields while attempting to change password');
