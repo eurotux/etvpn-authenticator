@@ -263,7 +263,7 @@ id -Gn nginx | grep -q '\b%{etvpnsqlwww_group}\b' || usermod -G %{etvpnsqlwww_gr
 exit 0
 
 %post
-setfacl -m u:%{etvpnsql_user}:rwx,d:u:%{etvpnsql_user}:rw %{_sharedstatedir}/etvpn/sqldb
+setfacl -m u:%{etvpnsql_user}:rwx,d:u:%{etvpnsql_user}:rw,d:g::r %{_sharedstatedir}/etvpn/sqldb
 find %{_sharedstatedir}/etvpn/sqldb -type f -exec setfacl -m u:%{etvpnsql_user}:rw {} \;
 setfacl -m d:u:%{etvpnwww_user}:r %{_sharedstatedir}/etvpn/port-share
 for srv in `systemctl | perl -ne '/(etux-vpnserver-auth@.*\.service)/ and print "$1"'`;
