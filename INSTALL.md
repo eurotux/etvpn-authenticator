@@ -13,7 +13,7 @@ If you don't use systemd, and are not creating a container, you'll have to provi
 
 After installation you'll want to tweak the .ini file. By default it's installed as `etux-vpnserver.ini`, that's what is invoked by the "default" `etux-vpnserver-auth.service`, but you can have multiple instances running (for multiple OpenVPN instances) - you can use `etux-vpnserver-auth@.service` for that.
 
-When editing the .ini file you'll come accross the need to generate a RSA private key. You can use the provided `tools/generic/create-master-key.pl` tool for that. Please be aware that this key must be kept as safe as possible and never leave your OpenVPN server(s), since it's what makes having your users' secrets stored on a shared backend like LDAP secure. If it's leaked, or if it's weak, then your system's MFA security is completely void. You've been warned.
+When editing the .ini file you'll come accross the need to generate a RSA private key. You can use the provided `tools/rsa/create-master-key.pl` tool for that. Please be aware that this key must be kept as safe as possible and never leave your OpenVPN server(s), since it's what makes having your users' secrets stored on a shared backend like LDAP secure. If it's leaked, or if it's weak, then your system's MFA security is completely void. You've been warned.
 
 As for configuring the webserver (used for Webauthn), you need to run the `webauthn.pl` PSGI and serve its requests via HTTPS. One easy and efficient way to do it is with uwsgi (which should come bundled with most recent distributions) and a webserver of your choice (tested under Apache and Nginx). You have example configurations in `webauthn/conf`. Contributions with configurations for other popular web servers are welcome.
 
