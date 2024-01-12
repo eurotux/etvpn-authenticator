@@ -218,8 +218,26 @@ sub validate_ip($$$;$$) {
 	return $ret;
 }
 
-sub ip_version_value($$$$$$$) {
-	my ($table, $cols, $values, $version, $type, $set_opt, $unset_opt) = @_;
+sub check_existing_user_ip($$$$) {
+	my ($addr_value, $table, $addr_column, $db_id_except) = @_;
+
+	my $query = 'SELECT '.$bconf->val('users col name').' FROM '.$bconf->val('users table')." WHERE $addr_column = ?";
+	my @params = ( $addr_value );
+	if (defined($db_id_except)) {
+		$query .= ' AND '.$bconf->val('users col id').' != ?';
+		push @params, $db_id_except;
+	}
+	my $sth = $dbh->prepare($query) or ETVPN::Cli::die_error('Database query preparation failed: '.$DBI::errstr);
+	$sth->execute(@params) or ETVPN::Cli::die_error('Database query execution failed: '.$DBI::errstr);
+	my @existing;
+	while (my $row = $sth->fetchrow_arrayref()) {
+		push @existing, $row->[0];
+	}
+	ETVPN::Cli::die_error("User IP address $addr_value is already defined for: ".join(', ', @existing)) if @existing;
+}
+
+sub ip_version_value($$$$$$$;$) {
+	my ($table, $cols, $values, $version, $type, $set_opt, $unset_opt, $db_id) = @_;
 
 	my $is_opt_arr = (ref($set_opt) eq 'ARRAY');
 	my $is_opt_set = (defined($set_opt) && (!$is_opt_arr || @$set_opt));
@@ -237,6 +255,9 @@ sub ip_version_value($$$$$$$) {
 		}
 		else {
 			push @$values, validate_ip($set_opt, $version, 0);
+		}
+		if (!$bconf->val('users allow same fixed ip address') && $type eq 'address') {
+			check_existing_user_ip($set_opt, $table, $col_name, $db_id);
 		}
 	}
 	else {
@@ -267,8 +288,8 @@ sub fill_ip_options($$$$) {
 
 	# address (user only)
 	if ($table eq 'users') {
-		ip_version_value($table, $cols, $values, 4, 'address', $ipv4_address, $no_ipv4_address);
-		ip_version_value($table, $cols, $values, 6, 'address', $ipv6_address, $no_ipv6_address);
+		ip_version_value($table, $cols, $values, 4, 'address', $ipv4_address, $no_ipv4_address, $db_id);
+		ip_version_value($table, $cols, $values, 6, 'address', $ipv6_address, $no_ipv6_address, $db_id);
 	}
 
 	# routes
