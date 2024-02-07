@@ -17,7 +17,7 @@
 
 
 Name:           etvpn
-Version:        0.7.3
+Version:        0.7.4
 Release:        1%{?dist}
 Summary:        ETVPN Authenticator suite for OpenVPN servers
 
@@ -361,6 +361,9 @@ done
 
 
 %changelog
+* Wed Feb  7 2024 Rodrigo Araujo <roa@eurotux.com> - 0.7.4-1
+- Update to version 0.7.4
+
 * Wed Sep  6 2023 Rodrigo Araujo <roa@eurotux.com> - 0.7.3-1
 - Update to version 0.7.3
 
