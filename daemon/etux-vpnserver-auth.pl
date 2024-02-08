@@ -812,28 +812,35 @@ sub process_client_mgmt_event() {
 			my $kid = $client->{'kid'};
 			ETVPN::Logger::log("client reauth requested with key id $kid");
 			my $reauth_ok = 0;
+			my $reauth_type;
 			my $password_data;
-			unless ($verified_sid) {
-				ETVPN::Logger::log("denied reauth attempt (no verified auth session for matching client)");
-			}
-			elsif (!defined($client->{'env'}->{'password'}) || ( $password_data = $client->{'env'}->{'password'} ) eq '') {
-				ETVPN::Logger::log("denied reauth attempt (no password data provided)");
+			if (!defined($client->{'env'}->{'password'}) || ( $password_data = $client->{'env'}->{'password'} ) eq '') {
+				$reauth_type = 'no password or reauth token data provided';
 			}
 			else {
-				my $client_auth_sid = (decode_password_data($password_data))[1];
-				if ( defined($client_auth_sid) &&
-				     $client_auth_sid eq $verified_sid &&
-				     exists($verified_sids{$user_login}{$client_auth_sid}) &&
-				     $verified_sids{$user_login}{$client_auth_sid} eq $cid ) {
-					$reauth_ok = 1;
-					ETVPN::Logger::log("client reauth successfull");
-					print $mgmt_h "client-auth-nt $cid $kid\r\n";
+				if ($verified_sid) {
+					$reauth_type = 'auth session token';
+					my $client_auth_sid = (decode_password_data($password_data))[1];
+					if ( defined($client_auth_sid) &&
+					     $client_auth_sid eq $verified_sid &&
+					     exists($verified_sids{$user_login}{$client_auth_sid}) &&
+					     $verified_sids{$user_login}{$client_auth_sid} eq $cid ) {
+						$reauth_ok = 1;
+					}
 				}
 				else {
-					ETVPN::Logger::log("denied reauth attempt (mismatched auth session)");
+					$reauth_type = 'password';
+					if (auth_user_pass_verify()) {
+						$reauth_ok = 1;
+					}
 				}
 			}
-			unless ($reauth_ok) {
+			if ($reauth_ok) {
+				ETVPN::Logger::log("client reauth successfull ($reauth_type)");
+				print $mgmt_h "client-auth-nt $cid $kid\r\n";
+			}
+			else {
+				ETVPN::Logger::log("denied reauth attempt ($reauth_type)");
 				deny_client($cid, $kid);
 				$cleanup = 1;
 			}
