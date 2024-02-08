@@ -301,7 +301,7 @@ sub update_user_secret {
 		return 0;
 	};
 	my $conf = $self->get_conf();
-	my $dbh = $self->db_object() or return undef;
+	my $dbh = $self->db_object() or return 0;
 	my $update_query = 'UPDATE '.$conf->val('users table').' SET '.$conf->val('users col challenge').'=? WHERE '.$conf->val('users col id').'=?';
 	my $sth = $dbh->prepare($update_query) or do {
 		$self->add_internal_error('database update query preparation failed while updating user secret: '.$DBI::errstr);
