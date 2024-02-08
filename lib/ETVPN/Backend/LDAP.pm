@@ -373,4 +373,24 @@ sub update_user_secret {
 }
 
 
+sub remove_user_secret {
+	my ($self, $user_name, $realm) = @_;
+
+	my $conf = $self->get_conf();
+	if ( ( my $ldap = $self->_ldap_object() ) &&
+	     $self->_find_user_bind_name($user_name, $realm) &&
+	     ( my $entry = $self->_get_last_user_entry_from_login_filter() ) ) {
+		$entry->delete( $conf->val('ldap challenge field') );
+		my $mesg = $entry->update($ldap);
+		if ($mesg->code) {
+			$self->add_internal_error($mesg->error_name);
+		}
+		else {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 1;

@@ -315,4 +315,25 @@ sub update_user_secret {
 }
 
 
+sub remove_user_secret {
+	my ($self, $user_name, $realm) = @_;
+
+	my $row = $self->userdata_from_db($user_name, $realm, 'id');
+	return 0 unless $self->check_row($row, 'id');
+	my $db_id = $row->{'id'};
+	my $conf = $self->get_conf();
+	my $dbh = $self->db_object() or return 0;
+	my $update_query = 'UPDATE '.$conf->val('users table').' SET '.$conf->val('users col challenge').'=NULL WHERE '.$conf->val('users col id').'=?';
+	my $sth = $dbh->prepare($update_query) or do {
+		$self->add_internal_error('database update query preparation failed while updating user secret: '.$DBI::errstr);
+		return 0;
+	};
+	$sth->execute($db_id) or do {
+		$self->add_internal_error('database update query execution failed while updating user secret: '.$DBI::errstr);
+		return 0;
+	};
+	return 1;
+}
+
+
 1;

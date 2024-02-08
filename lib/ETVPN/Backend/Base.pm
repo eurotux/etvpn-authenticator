@@ -299,4 +299,11 @@ sub update_user_secret {
 }
 
 
+sub remove_user_secret {
+	# not supposed to be executed on base class
+	# when overriding, it should accept $obj->remove_user_secret($user_name, $realm) and return a boolean
+	ETVPN::Logger::fatal("internal error: backend base class remove_user_secret() called");
+}
+
+
 1;
