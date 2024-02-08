@@ -140,9 +140,9 @@ sub help {
 	print "\t--remove-ipv6-route=ipv6_route  Remove a user or group IPv6 static route\n";
 	print "\t                                To remove multiple routes, repeat this option multiple times\n";
 	print "\t--no-ipv6-routes                Unset any user or group IPv6 static routes\n";
-	print "\t--add-to-group=group               Add user/group to a group\n";
+	print "\t--add-to-group=group            Add user/group to a group\n";
 	print "\t                                To set in multiple groups at once, repeat this option multiple times\n";
-	print "\t--remove-from-group=group            Remove user/group from a group\n";
+	print "\t--remove-from-group=group       Remove user/group from a group\n";
 	print "\t                                To remove from multiple groups at once, repeat this option multiple\n";
 	print "\t                                times\n";
 	print "\t--no-groups                     Remove user/group from any group\n";
