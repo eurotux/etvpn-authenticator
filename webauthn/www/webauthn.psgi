@@ -320,6 +320,7 @@ my $app = sub {
 		}
 		# Prepare status, log invalid or denied attempts
 		if ($result eq 'OK') {
+			$status = 200;  # OK
 			$message = 'Success';
 			$submessage = 'You may now close this window.' unless $submessage;
 		}
