@@ -195,6 +195,8 @@ install -t %{buildroot}%{_unitdir}/etux-vpnserver-auth@etux-vpnserver.service.d 
         systemd/system/etux-vpnserver-auth@etux-vpnserver.service.d/*.conf
 install -t %{buildroot}%{_unitdir}/etux-vpnserver-sqluserportal@sqluserportal.service.d -m 0644 \
         systemd/system/etux-vpnserver-sqluserportal@sqluserportal.service.d/*.conf
+mkdir -p %{buildroot}%{_tmpfilesdir}
+install -t %{buildroot}%{_tmpfilesdir} -m 0644 systemd/tmpfiles.d/etvpn.conf
 # sqldb directory to facilitate storing sqlite database(s)
 mkdir -p  %{buildroot}%{_sharedstatedir}/etvpn/sqldb
 # ippool directory to facilitate storing a read-write sqlite database
@@ -210,7 +212,6 @@ mkdir -p  %{buildroot}%{_sharedstatedir}/etvpn/port-share
 mkdir -p  %{buildroot}%{_sysconfdir}/uwsgi.d
 install -t %{buildroot}%{_sysconfdir}/uwsgi.d -m 0640 webauthn/conf/uwsgi/etvpn.ini
 install -t %{buildroot}%{_sysconfdir}/uwsgi.d -m 0640 sqluserportal/conf/uwsgi/etvpn-sqluserportal.ini
-mkdir -p %{buildroot}%{_tmpfilesdir}
 install -t %{buildroot}%{_tmpfilesdir} -m 0644 systemd/tmpfiles.d/etvpnwww.conf
 install -t %{buildroot}%{_tmpfilesdir} -m 0644 systemd/tmpfiles.d/etvpnsqlwww.conf
 # apache+uwsgi
@@ -322,6 +323,7 @@ done
 %{_libexecdir}/etvpn/tools/
 %dir %{_datadir}/etvpn
 %{_unitdir}/etux-vpnserver-auth*
+%{_tmpfilesdir}/etvpn.conf
 %dir %attr(2710, root, %{etvpn_maingroup}) %{_sharedstatedir}/etvpn/sqldb
 %dir %attr(2730, root, %{etvpn_maingroup}) %{_sharedstatedir}/etvpn/ippool
 
