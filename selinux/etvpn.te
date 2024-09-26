@@ -1,0 +1,79 @@
+policy_module(etvpn,1.0)
+
+# Private type declarations
+type etvpn_t;
+type etvpn_exec_t;
+type etvpn_etc_t;
+type etvpn_sqldb_t;
+type etvpn_ippool_t;
+type etvpn_cgi_sessions_t;
+type etvpn_var_run_t;
+
+# Other types mentioned
+require {
+	attribute domain;
+	attribute port_type;
+	type proc_t;
+	type node_t;
+	type openvpn_t;
+	type openvpn_var_run_t;
+	type sudo_exec_t;
+	type shorewall_exec_t;
+	type chkpwd_t;
+}
+
+# main app context/domain
+domain_type(etvpn_t)
+
+# basic app required permissions
+corecmd_exec_bin(etvpn_t)
+auth_use_nsswitch(etvpn_t)
+ps_process_pattern(etvpn_t, domain)
+list_dirs_pattern(etvpn_t, proc_t, proc_t)
+read_files_pattern(etvpn_t, proc_t, proc_t)
+allow etvpn_t self:tcp_socket create_stream_socket_perms;
+allow etvpn_t node_t:tcp_socket node_bind;
+allow etvpn_t port_type:tcp_socket name_bind;
+allow etvpn_t port_type:udp_socket name_bind;
+allow etvpn_t etvpn_t:process execmem;
+
+# allow systemd/init to run the process (also creates the exec context)
+init_daemon_domain(etvpn_t, etvpn_exec_t)
+
+# other etvpn file contexts
+files_type(etvpn_etc_t)
+files_type(etvpn_sqldb_t)
+files_type(etvpn_ippool_t)
+files_type(etvpn_cgi_sessions_t)
+files_type(etvpn_var_run_t)
+
+# app permissions to the other etvpn file contexts
+read_files_pattern(etvpn_t, etvpn_etc_t, etvpn_etc_t)
+read_files_pattern(etvpn_t, etvpn_sqldb_t, etvpn_sqldb_t)
+rw_files_pattern(etvpn_t, etvpn_ippool_t, etvpn_ippool_t)
+rw_files_pattern(etvpn_t, etvpn_cgi_sessions_t, etvpn_cgi_sessions_t)
+create_files_pattern(etvpn_t, etvpn_cgi_sessions_t, etvpn_cgi_sessions_t)
+delete_files_pattern(etvpn_t, etvpn_cgi_sessions_t, etvpn_cgi_sessions_t)
+setattr_files_pattern(etvpn_t, etvpn_cgi_sessions_t, etvpn_cgi_sessions_t)
+rw_files_pattern(etvpn_t, etvpn_var_run_t, etvpn_var_run_t)
+create_files_pattern(etvpn_t, etvpn_var_run_t, etvpn_var_run_t)
+delete_files_pattern(etvpn_t, etvpn_var_run_t, etvpn_var_run_t)
+
+# etvpn permissions to openvpn contexts
+rw_sock_files_pattern(etvpn_t, openvpn_var_run_t, openvpn_var_run_t)
+allow etvpn_t openvpn_t:unix_stream_socket connectto;
+
+# openvpn permissions to etvpn contexts
+rw_files_pattern(openvpn_t, etvpn_var_run_t, etvpn_var_run_t)
+create_files_pattern(openvpn_t, etvpn_var_run_t, etvpn_var_run_t)
+delete_files_pattern(openvpn_t, etvpn_var_run_t, etvpn_var_run_t)
+
+# several permissions between other contexts that make sense with typical etvpn authenticator
+# usage but are strangely missing from the default selinux-policy
+rw_dirs_pattern(openvpn_t, openvpn_t, openvpn_t)
+rw_files_pattern(openvpn_t, openvpn_t, openvpn_t)
+read_files_pattern(openvpn_t, sudo_exec_t, sudo_exec_t)
+exec_files_pattern(openvpn_t, sudo_exec_t, sudo_exec_t)
+read_files_pattern(openvpn_t, shorewall_exec_t, shorewall_exec_t)
+exec_files_pattern(openvpn_t, shorewall_exec_t, shorewall_exec_t)
+allow chkpwd_t self:capability { dac_override };

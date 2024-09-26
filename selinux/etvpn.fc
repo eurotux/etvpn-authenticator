@@ -1,0 +1,7 @@
+/usr/libexec/etvpn/etux-vpnserver-auth			gen_context(system_u:object_r:etvpn_exec_t,s0)
+/etc/etvpn(/.*)?					gen_context(system_u:object_r:etvpn_etc_t,s0)
+/var/lib/etvpn/sqldb(/.*)?				gen_context(system_u:object_r:etvpn_sqldb_t,s0)
+/var/lib/etvpn/ippool(/.*)?				gen_context(system_u:object_r:etvpn_ippool_t,s0)
+/var/lib/etvpn/cgi-sessions/authorize(/.*)?		gen_context(system_u:object_r:etvpn_cgi_sessions_t,s0)
+/var/lib/etvpn/cgi-sessions/register(/.*)?		gen_context(system_u:object_r:etvpn_cgi_sessions_t,s0)
+/run/etvpn(/.*)?					gen_context(system_u:object_r:etvpn_var_run_t,s0)

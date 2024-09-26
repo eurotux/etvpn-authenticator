@@ -33,6 +33,7 @@ BuildRequires:  make
 BuildRequires:  perl-generators
 BuildRequires:  perl-interpreter
 BuildRequires:  perl(ExtUtils::MakeMaker) >= 6.76
+BuildRequires:  checkpolicy selinux-policy-devel
 
 Requires:       %{name}-web = %{version}-%{release}
 Requires:       openvpn >= 2.5
@@ -172,12 +173,26 @@ Requires:       nginx
 Provides necessary configuration and dependencies for using ETVPN Authenticator User Self-Service Portal with Nginx web server and uWSGI.
 
 
+%package selinux
+Summary:          SELinux context for %{name}
+Requires:         %name = %version-%release
+Requires(post):   policycoreutils
+Requires(postun): policycoreutils
+
+%description selinux
+SElinux context for %{name}.
+
+
 %prep
 %setup0 -c
 
 
 %build
 perl Makefile.PL INSTALLDIRS=vendor NO_PACKLIST=1 NO_PERLLOCAL=1
+# SELinux configs
+cd selinux
+make -f %{_datadir}/selinux/devel/Makefile
+cd ..
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -225,6 +240,8 @@ install -t %{buildroot}%{_sysconfdir}/nginx/default.d -m 0644 sqluserportal/conf
 mkdir -p  %{buildroot}%{_sysconfdir}/nginx/conf.d
 install -t %{buildroot}%{_sysconfdir}/nginx/conf.d -m 0644 webauthn/conf/nginx/etux-vpnserver-uwsgi_upstream.conf
 install -t %{buildroot}%{_sysconfdir}/nginx/conf.d -m 0644 sqluserportal/conf/nginx/etux-vpnserver-sqluserportal-uwsgi_upstream.conf
+# SELinux policy
+install -p -m 644 -D selinux/etvpn.pp %{buildroot}%{_datadir}/selinux/packages/%{name}/etvpn.pp
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -309,6 +326,25 @@ do
     %systemd_postun_with_restart $srv
 done
 
+%post selinux
+if [ "$1" -le "1" ]; then # First install
+        semodule -i %{_datadir}/selinux/packages/%{name}/etvpn.pp 2>/dev/null || :
+        fixfiles -R %{name} restore || :
+fi
+
+%preun selinux
+if [ "$1" -lt "1" ]; then # Final removal
+        semodule -r etvpn 2>/dev/null || :
+        fixfiles -R %{name} restore || :
+fi
+
+%postun selinux
+if [ "$1" -ge "1" ]; then # Upgrade
+        # Replaces the module if it is already loaded
+        semodule -i %{_datadir}/selinux/packages/%{name}/etvpn.pp 2>/dev/null || :
+        fixfiles -R %{name} restore || :
+fi
+
 
 %files
 %license LICENSE
@@ -366,6 +402,9 @@ done
 %files sqluserportal-nginx-uwsgi
 %config(noreplace) %{_sysconfdir}/nginx/conf.d/etux-vpnserver-sqluserportal-uwsgi_upstream.conf
 %config(noreplace) %{_sysconfdir}/nginx/default.d/etux-vpnserver-sqluserportal-uwsgi_locations.conf
+
+%files selinux
+%{_datadir}/selinux/packages/%{name}/etvpn.pp
 
 
 %changelog
