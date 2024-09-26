@@ -2,6 +2,7 @@
 %global etvpn_maingroup  %{etvpn_user}
 %global etvpn_homedir    %{_sharedstatedir}/etvpn
 %global etvpn_gecos      "ETVPN Authenticator service identity"
+%global etvpn_sharedgroup etvpnrun
 %global etvpnwww_user    etvpnwww
 %global etvpnwww_group   %{etvpnwww_user}
 %global etvpnwww_homedir %{etvpn_homedir}/www
@@ -230,6 +231,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %pre
 getent group %{etvpn_maingroup} >/dev/null || groupadd -r %{etvpn_maingroup}
+getent group %{etvpn_sharedgroup} >/dev/null || groupadd -r %{etvpn_sharedgroup}
 getent group %{etvpnwww_group} >/dev/null || groupadd -r %{etvpnwww_group}
 getent group %{etvpnsql_group} >/dev/null || groupadd -r %{etvpnsql_group}
 getent passwd %{etvpn_user} >/dev/null || \
@@ -238,6 +240,10 @@ getent passwd %{etvpnwww_user} >/dev/null || \
        useradd -r -g %{etvpnwww_group} -d %{etvpnwww_homedir} -s /sbin/nologin -c '%{etvpnwww_gecos}' %{etvpnwww_user}
 getent passwd %{etvpnsql_user} >/dev/null || \
        useradd -r -g %{etvpnsql_group} -G %{etvpn_maingroup} -d %{etvpnsql_homedir} -s /sbin/nologin -c '%{etvpnsql_gecos}' %{etvpnsql_user}
+getent passwd openvpn >/dev/null && \
+       usermod -G %{etvpn_sharedgroup} -a openvpn 2>/dev/null
+# handle etvpn shared group both in first install and for updates from versions where that group didn't yet exist
+usermod -G %{etvpn_sharedgroup} -a %{etvpn_user} 2>/dev/null
 exit 0
 
 %pre sqluserportal
