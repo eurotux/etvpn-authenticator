@@ -35,8 +35,9 @@ use ETVPN::Util;
 
 my %conf_structure = (
 	'global' => [
-		'management interface address',
-		'management interface port',
+		['management interface address', def => ''],
+		['management interface port', def=> 0, type => 'uint'],
+		['management interface unix', def => ''],
 		'management interface password',
 		['notify port', def => 5194],
 		['management interface retry', def => 5, min => 5, type => 'uint'],
@@ -356,6 +357,17 @@ sub _load_main_config {
 	$self->_assert_configuration($config_file);
 
 	## Extra validations
+	if ($self->isdef('management interface unix')) {
+		confdie('please specify either a management interface address or a management interface unix socket but not both') if $self->isdef('management interface address');
+		confdie('management interface unix socket can\'t be specified at the same time as a management interface port') if $self->val('management interface port');
+	}
+	elsif ($self->isdef('management interface address')) {
+		confdie('management interface address requires a management interface port to also be defined') unless $self->val('management interface port');
+	}
+	else {
+		confdie('please specify a management interface and a port, or a management interface unix socket path');
+	}
+
 	if ($self->isdef('default backend')) {
 		my $def_backend = $self->val('default backend');
 		confdie("unknown default backend \"$def_backend\"") unless exists($self->val('backends')->{$def_backend});

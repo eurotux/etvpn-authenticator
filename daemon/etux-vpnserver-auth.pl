@@ -417,13 +417,22 @@ sub connect_to_management_interface() {
 				ETVPN::Logger::log("connecting to OpenVPN management interface...") unless defined($connect_ts);
 				$connect_to_wait = 1 if $connect_to_wait <= 1;
 				$connect_ts = time;
-				$mgmt_h = IO::Socket::INET->new(
-					PeerAddr => $conf->val('management interface address'),
-					PeerPort => $conf->val('management interface port'),
-					Proto    => 'tcp',
-					Type     => IO::Socket::SOCK_STREAM,
-					Timeout => $connect_to_wait
-				);
+				if ($conf->isdef('management interface unix')) {
+					$mgmt_h = IO::Socket::UNIX->new(
+						Peer => $conf->val('management interface unix'),
+						Type     => IO::Socket::SOCK_STREAM,
+						Timeout => $connect_to_wait
+					);
+				}
+				else {
+					$mgmt_h = IO::Socket::INET->new(
+						PeerAddr => $conf->val('management interface address'),
+						PeerPort => $conf->val('management interface port'),
+						Proto    => 'tcp',
+						Type     => IO::Socket::SOCK_STREAM,
+						Timeout => $connect_to_wait
+					);
+				}
 				$connect_ts = undef;
 				$connect_to_wait = $conf->val('management interface connect timeout');
 				if (defined($mgmt_h)) {
