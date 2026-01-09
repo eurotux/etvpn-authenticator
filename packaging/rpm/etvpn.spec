@@ -184,7 +184,7 @@ SElinux context for %{name}.
 
 
 %prep
-%setup0 -c
+%setup -c -a 0
 
 
 %build
