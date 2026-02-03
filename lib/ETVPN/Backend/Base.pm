@@ -22,6 +22,7 @@ use parent qw(ETVPN::Actionable);
 
 use Scalar::Util 'refaddr';
 use Net::IP;
+use Net::DNS;
 use ETVPN::Logger;
 use ETVPN::Login;
 use ETVPN::Util;
@@ -78,6 +79,42 @@ sub _class_handle_sigpipe {
 	foreach (keys %sigpipe_handlers) {
 		&{$sigpipe_handlers{$_}}();
 	}
+}
+
+
+sub _resolve_host_routes {
+	my ($self, $host_routes) = @_;
+
+	return [] unless (defined($host_routes) && ref($host_routes) eq 'ARRAY');
+
+	my %addresses;
+
+	my $resolver = Net::DNS::Resolver->new(
+		retry   => 2,
+		retrans => 2,
+	);
+
+	foreach my $hn (@$host_routes) {
+
+		next unless defined($hn) && length($hn);
+
+		foreach my $type (qw(A AAAA)) {
+
+			my $query = $resolver->query($hn, $type);
+			next unless $query;
+
+			foreach my $rr ($query->answer) {
+
+				next unless $rr->type eq $type;
+
+				my $addr = $rr->address;
+				next if exists($addresses{$addr});
+				$addresses{$addr} = 1;
+			}
+		}
+	}
+
+	return [ keys %addresses ];
 }
 
 
@@ -164,6 +201,11 @@ sub get_static_routes {
 				$ret_routes = { %$ret_routes, %{$conf_group_routes->{$group}} };
 			}
 		}
+		# Add host routes
+		my $host_routes = $self->get_host_routes($data);
+		foreach my $r (@{$self->_resolve_host_routes($host_routes)}) {
+			$ret_routes->{$r} = 1;
+		}
 	}
 
 	if ($self->has_internal_error()) {
@@ -246,6 +288,14 @@ sub get_ip_opt_val {
 	# - an array ref with [ip_prefix, interface_id], without any /prefix_len, where one of them can be undef if not applicable, if type is 'addr' and ipver is 6
 	# - an array ref if type is 'routes'
 	ETVPN::Logger::fatal("internal error: backend base class get_ip_opt_val() called");
+}
+
+
+sub get_host_routes {
+	# can be overridden by subclasses
+	# when overriding, it should accept $obj->get_host_routes($backend_specific_optional_data) and return the stored value on the backend corresponding to any host routes if they exist
+	# return value should be a reference to a list, that may be empty ([])
+	return [];
 }
 
 
