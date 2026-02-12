@@ -256,7 +256,7 @@ sub check_user_password {
 	# Query mandatory and optional configured columns
 	my @col_confs = ('id', 'password', 'challenge');
 	my $conf = $self->get_conf();
-	foreach my $ip_col_opt ('ipv4 address', 'ipv6 address', 'ipv4 routes', 'ipv6 routes') {
+	foreach my $ip_col_opt ('ipv4 address', 'ipv6 address', 'ipv4 routes', 'ipv6 routes', 'host routes') {
 		push(@col_confs, $ip_col_opt) if $conf->isdef("users col $ip_col_opt");
 	}
 

@@ -65,6 +65,9 @@ my @remove_ipv6_routes;
 my $no_ipv6_routes = 0;
 my $dry_run = 0;
 my $need_help = 0;
+my @add_host_routes;
+my @remove_host_routes;
+my $no_host_routes = 0;
 
 
 #######
@@ -148,6 +151,11 @@ sub help {
 	print "\t--no-groups                     Remove user/group from any group\n";
 	print "\t                                Cannot be used at the same time as --add-to-group\n";
 	print "\n";
+	print "\t--add-host-route=host_route     Add a user or group host route (DNS name or IP)\n";
+	print "\t                                To add multiple host routes at once, repeat this option multiple times\n";
+	print "\t--remove-host-route=host_route  Remove a user or group host route\n";
+	print "\t                                To remove multiple host routes at once, repeat this option multiple times\n";
+	print "\t--no-host-routes                Unset any user or group host routes\n";
 	exit 1;
 }
 
@@ -328,6 +336,64 @@ sub fill_ip_options($$$$) {
 	ip_version_value($table, $cols, $values, 4, 'routes', $ipv4_routes, $unset_ipv4_routes);
 	my ($ipv6_routes, $unset_ipv6_routes) = filter_routes(6, $existing_ipv6, \@add_ipv6_routes, \@remove_ipv6_routes, $no_ipv6_routes);
 	ip_version_value($table, $cols, $values, 6, 'routes', $ipv6_routes, $unset_ipv6_routes);
+
+	if ($table eq 'users') {
+		my $existing_hosts = [];
+
+		if ($db_id) {
+			my $colh_name = $bconf->val("$table col host routes")
+				or ETVPN::Cli::die_error(
+					"Can't change or set $table host routes unless \"$table col host routes\" option is set for the SQL realm \"$realm\" backend"
+				);
+
+			my $query =
+				'SELECT ' . $colh_name .
+				' FROM ' . $bconf->val("$table table") .
+				' WHERE ' . $bconf->val("$table col id") . '=?';
+
+			my $sth = $dbh->prepare($query)
+				or ETVPN::Cli::die_error('Database query preparation failed: ' . $DBI::errstr);
+
+			$sth->execute($db_id)
+				or ETVPN::Cli::die_error('Database query execution failed: ' . $DBI::errstr);
+
+			my $row = $sth->fetchrow_hashref();
+			$existing_hosts = [ split(/\s+/, $row->{$colh_name}) ]
+				if $row && defined $row->{$colh_name};
+		}
+
+	# --- HOST ROUTES (hostname only, no IP validation) ---
+	my %hosts = map { $_ => 1 } @$existing_hosts;
+
+	# add hosts
+	for my $h (@add_host_routes) {
+		$hosts{$h} = 1;
+	}
+
+	# remove hosts
+	for my $h (@remove_host_routes) {
+		delete $hosts{$h};
+	}
+
+	my $colh_name = $bconf->val("$table col host routes")
+		or ETVPN::Cli::die_error(
+			"Can't change or set $table host routes unless \"$table col host routes\" option is set for the SQL realm \"$realm\" backend"
+		);
+
+	if ($no_host_routes) {
+		push @$cols, $colh_name;
+		push @$values, undef;
+	}
+	elsif (%hosts) {
+		push @$cols, $colh_name;
+		push @$values, join(' ', sort keys %hosts);
+	}
+	elsif (@remove_host_routes) {
+        	push @$cols, $colh_name;
+        	push @$values, undef;
+	}
+		
+	}
 }
 
 sub check_groups() {
@@ -435,6 +501,9 @@ GetOptions (
 	'add-ipv6-route=s' => \@add_ipv6_routes,
 	'remove-ipv6-route=s' => \@remove_ipv6_routes,
 	'no-ipv6-routes' => \$no_ipv6_routes,
+        'add-host-route=s'    => \@add_host_routes,
+        'remove-host-route=s' => \@remove_host_routes,
+        'no-host-routes'      => \$no_host_routes,
 ) or push @cl_errors, "Invalid parameters.";
 unless ( defined($command = shift @ARGV ) ) {
 	push @cl_errors, "Missing command.";
@@ -612,6 +681,11 @@ elsif ($command eq 'usershow') {
 		push @fields, 'IPv6 Routes';
 		push @cols, 'COALESCE ('.$bconf->val('users col ipv6 routes').",'-')";
 	}
+	if ($bconf->isdef('users col host routes')) {
+    		push @fields, 'Host Routes';
+    		push @cols, 'COALESCE ('.$bconf->val('users col host routes').",'-')";
+	}
+
 	# If user is duplicate, we want to detect it and issue a warning, and we also want to use SQL coalesce and case statements
 	# For that reason, we don't use the $backend->userdata_from_db() method in 'show' command
 	my $query = 'SELECT '.join(',', @cols).' FROM '.$bconf->val('users table').' WHERE '.$bconf->val('users col name').'=?';
