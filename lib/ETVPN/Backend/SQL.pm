@@ -155,15 +155,19 @@ sub get_ip_opt_val {
 
 	return undef unless defined($ipver);
 
-	my $key = 'ip'.(defined($ipver) ? "v$ipver" : '').'_';
+	my $confkey = 'users col ip'.(defined($ipver) ? "v$ipver" : '').' ';
 	if ($type eq 'addr') {
-		$key .= 'address';
+		$confkey .= 'address';
 	}
 	else {
-		$key .= $type;
+		$confkey .= $type;
+	}
+	my $addr;
+	my $conf = $self->get_conf();
+	if ($conf->isdef($confkey)) {
+		$addr = $row->{$conf->val($confkey)};
 	}
 
-	my $addr = $row->{$key};
 	if ($type eq 'routes') {
 		# use a hash to avoid duplicates
 		my %routes;
@@ -172,7 +176,6 @@ sub get_ip_opt_val {
 			%routes = map { $_ => 1 } split(/\s*[\s,]\s*/, $addr);
 		}
 		# routes from SQL (sub)groups the user belongs to
-		my $conf = $self->get_conf();
 		if ( ( my $g_table = $conf->val('groups table') ) &&
 		     ( my $g_col_routes = $conf->val("groups col ipv$ipver routes") ) &&
 		     ( my $dbh = $self->db_object() ) ) {
