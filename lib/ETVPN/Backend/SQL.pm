@@ -211,6 +211,16 @@ sub get_ip_opt_val {
 }
 
 
+sub get_host_routes {
+	my ($self, $row) = @_;
+
+	my $conf = $self->get_conf();
+	return [] unless $conf->isdef('users col host routes');
+	my $host_routes = $row->{$conf->val('users col host routes')};
+	return defined($host_routes) ? [ split(/\s*[\s,]\s*/, $host_routes) ] : [];
+}
+
+
 sub _evlogin_from_userdata {
 	my ($self, $user_name, $row) = @_;
 
@@ -251,7 +261,7 @@ sub check_user_password {
 	# Query mandatory and optional configured columns
 	my @col_confs = ('id', 'password', 'challenge');
 	my $conf = $self->get_conf();
-	foreach my $ip_col_opt ('ipv4 address', 'ipv6 address', 'ipv4 routes', 'ipv6 routes') {
+	foreach my $ip_col_opt ('ipv4 address', 'ipv6 address', 'ipv4 routes', 'ipv6 routes', 'host routes') {
 		push(@col_confs, $ip_col_opt) if $conf->isdef("users col $ip_col_opt");
 	}
 
@@ -282,7 +292,7 @@ sub get_user_login_object {
 	my @col_confs = ('id', 'challenge');
 	if ($extended) {
 		my $conf = $self->get_conf();
-		foreach my $ip_col_opt ('ipv4 address', 'ipv6 address', 'ipv4 routes', 'ipv6 routes') {
+		foreach my $ip_col_opt ('ipv4 address', 'ipv6 address', 'ipv4 routes', 'ipv6 routes', 'host routes') {
 			push(@col_confs, $ip_col_opt) if $conf->isdef("users col $ip_col_opt");
 		}
 	}

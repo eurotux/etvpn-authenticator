@@ -112,6 +112,7 @@ my %conf_structure = (
 		['users col ipv6 address', def => ''],
 		['users col ipv4 routes', def => ''],
 		['users col ipv6 routes', def => ''],
+		['users col host routes', def => ''],
 		['users allow same fixed ip address', def => 0, type => 'bool'],
 		['groups table', def => ''],
 		['groups col id', def => 'id'],

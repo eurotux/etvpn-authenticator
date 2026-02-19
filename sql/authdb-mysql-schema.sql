@@ -16,6 +16,7 @@ CREATE TABLE `users` (
   `ipv6_address` text DEFAULT NULL,
   `ipv4_routes` text DEFAULT NULL,
   `ipv6_routes` text DEFAULT NULL,
+  `host_routes` text DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`) USING HASH
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
