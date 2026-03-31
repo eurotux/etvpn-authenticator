@@ -72,16 +72,16 @@ sub _validate_totp_challenge {
 	my @time_variants = ('');
 	my $tolerance = $conf->val('otpauth tolerance');
 	if ($tolerance > 0) {
-		push @time_variants, ' -S '.quotemeta("-$tolerance sec");
-		push @time_variants, ' -S '.quotemeta("+$tolerance sec");
+		push @time_variants, ['-S', "-$tolerance sec"];
+		push @time_variants, ['-S', "+$tolerance sec"];
 	}
 	foreach my $timeopt (@time_variants) {
 		local $ENV{'LANG'} = 'C';
-		my $oathcmd = quotemeta($conf->val('oathtool')).$timeopt.' --totp --digits '.quotemeta($conf->val('otpauth digits')).' '.quotemeta($hex_secret);
-		my $otpcode = `$oathcmd`;
-		if ($? == 0) {
-			{ local $/ = "\n"; chomp $otpcode; }
-			$valid_codes{$otpcode} = 1;
+		my @args = ref($timeopt) ? @$timeopt : ();
+		push @args, '--totp', '--digits', $conf->val('otpauth digits'), '-';
+		my ($rc, $output) = ETVPN::Util::run_cmd_stdin("$hex_secret\n", $conf->val('oathtool'), @args);
+		if ($rc == 0 && defined($output->[0])) {
+			$valid_codes{$output->[0]} = 1;
 		}
 		else {
 			$self->add_internal_error('error executing oathtool');
