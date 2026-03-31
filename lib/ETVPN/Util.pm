@@ -20,6 +20,7 @@ use strict;
 use warnings;
 
 use Net::IP qw(:PROC);
+use IPC::Open2;
 use Bytes::Random::Secure qw(random_string_from);
 
 use ETVPN::Logger;
@@ -150,6 +151,19 @@ sub is_strong_password($) {
 sub strong_crypt($) {
 	my $p = shift;
 	crypt($p, '$6$'.random_string_from(join('', ('.', '/', 0..9, 'A'..'Z', 'a'..'z')), 16));
+}
+
+
+sub run_cmd_stdin($$;@) {
+	my ($stdin_data, $prog, @args) = @_;
+	my $pid = open2(my $rd, my $wr, $prog, @args);
+	print $wr $stdin_data;
+	close $wr;
+	local $/;
+	my @output = split /\n/, <$rd>;
+	close $rd;
+	waitpid($pid, 0);
+	return ($? >> 8, \@output);
 }
 
 
