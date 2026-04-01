@@ -466,6 +466,11 @@ else {
 			push @cl_errors, '--subgroups is not valid in this context' if $list_subgroups;
 			push @cl_errors, '--users is not valid in this context' if $list_users;
 		}
+		if ($command !~ /^(?:user|group)(?:add|mod)$/) {
+			push @cl_errors, 'IP address options are not valid in this context' if defined($ipv4_address) || $no_ipv4_address || defined($ipv6_address) || $no_ipv6_address;
+			push @cl_errors, 'IP route options are not valid in this context' if @add_ipv4_routes || @remove_ipv4_routes || $no_ipv4_routes || @add_ipv6_routes || @remove_ipv6_routes || $no_ipv6_routes;
+			push @cl_errors, 'group membership options are not valid in this context' if @add_to_groups || @remove_from_groups || $no_groups;
+		}
 	}
 }
 if (@cl_errors) {
