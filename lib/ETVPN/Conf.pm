@@ -217,6 +217,13 @@ sub isdef {
 }
 
 
+sub list_has_entries {
+	my ($self, $key) = @_;
+	my $val = $self->{$key};
+	return defined($val) && ref($val) eq 'ARRAY' && @$val ? 1 : 0;
+}
+
+
 sub add_routes {
 	my ($self, $routes) = @_;
 	$self->{'push routes'} = ETVPN::Util::add_new_routes($self->{'push routes'}, $routes);
