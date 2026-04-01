@@ -280,7 +280,7 @@ sub auth_user_pass_verify() {
 		$login = $session->[0];
 		ETVPN::Logger::log('resuming existing CR authentication session from cid '.$login->get_cid_kid()->[0]);
 		if ( !$session->[0]->is_pending_auth() &&
-		     (!defined($user_challenge_reply) || !$user_challenge_reply ne '') ) {
+		     (!defined($user_challenge_reply) || $user_challenge_reply eq '') ) {
 			# bannable error
 			ETVPN::Logger::log('login failed: user tried to send empty challenge response');
 			clear_session_id($user_login, $session_id);
