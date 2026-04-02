@@ -18,6 +18,9 @@ ETVPNSQLWWW_GROUP = $(ETVPNSQLWWW_USER)
 override_dh_auto_configure:
 	perl Makefile.PL INSTALLDIRS=vendor NO_PACKLIST=1 NO_PERLLOCAL=1
 
+override_dh_auto_test:
+	perl t/basic.pl
+
 override_dh_auto_install:
 	dh_auto_install -- \
 		ETVPN_SYSTEM_CONFDIR=/etc \

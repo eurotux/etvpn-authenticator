@@ -4,7 +4,25 @@ Priority: optional
 Maintainer: Rodrigo Araujo <roa@eurotux.com>
 Build-Depends: debhelper-compat (= 13),
                perl,
-               libextutils-makemaker-perl
+               libextutils-makemaker-perl,
+               sqlite3,
+               libauthen-webauthn-perl,
+               libbytes-random-secure-perl,
+               libcbor-xs-perl,
+               libcgi-session-perl,
+               libconfig-inifiles-perl,
+               libconvert-base32-perl,
+               libcrypt-openssl-rsa-perl,
+               libdbd-sqlite3-perl,
+               libdbi-perl,
+               libio-interactive-perl,
+               libjson-perl,
+               liblist-moreutils-perl,
+               libnet-dns-perl,
+               libnet-ip-perl,
+               libnet-ldap-perl,
+               libterm-readkey-perl,
+               liburi-perl
 Standards-Version: 4.6.2
 Homepage: https://github.com/eurotux/etvpn-authenticator
 

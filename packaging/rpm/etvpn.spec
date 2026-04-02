@@ -18,7 +18,7 @@
 
 
 Name:           etvpn
-Version:        0.7.6
+Version:        0.7.7
 Release:        1%{?dist}
 Summary:        ETVPN Authenticator suite for OpenVPN servers
 
@@ -34,6 +34,24 @@ BuildRequires:  perl-generators
 BuildRequires:  perl-interpreter
 BuildRequires:  perl(ExtUtils::MakeMaker) >= 6.76
 BuildRequires:  checkpolicy selinux-policy-devel
+BuildRequires:  /usr/bin/sqlite3
+BuildRequires:  perl(Authen::WebAuthn)
+BuildRequires:  perl(Bytes::Random::Secure)
+BuildRequires:  perl(CBOR::XS)
+BuildRequires:  perl(CGI::Session)
+BuildRequires:  perl(Config::IniFiles)
+BuildRequires:  perl(Convert::Base32)
+BuildRequires:  perl(Crypt::OpenSSL::RSA)
+BuildRequires:  perl(DBI)
+BuildRequires:  perl(DBD::SQLite)
+BuildRequires:  perl(IO::Interactive)
+BuildRequires:  perl(JSON)
+BuildRequires:  perl(List::MoreUtils)
+BuildRequires:  perl(Net::DNS)
+BuildRequires:  perl(Net::IP)
+BuildRequires:  perl(Net::LDAP)
+BuildRequires:  perl(Term::ReadKey)
+BuildRequires:  perl(URI)
 
 Requires:       %{name}-web = %{version}-%{release}
 Requires:       openvpn >= 2.5
@@ -193,6 +211,9 @@ perl Makefile.PL INSTALLDIRS=vendor NO_PACKLIST=1 NO_PERLLOCAL=1
 cd selinux
 make -f %{_datadir}/selinux/devel/Makefile
 cd ..
+
+%check
+perl t/basic.pl
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -408,6 +429,9 @@ fi
 
 
 %changelog
+* Tue Apr  1 2025 Rodrigo Araujo <roa@eurotux.com> - 0.7.7-1
+- Update to version 0.7.7
+
 * Thu Sep 26 2024 Rodrigo Araujo <roa@eurotux.com> - 0.7.6-1
 - Update to version 0.7.6
 
