@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Set ACLs on sqldb directory
+        if command -v setfacl >/dev/null 2>&1; then
+            setfacl -m u:etvpnsql:rwx,d:u:etvpnsql:rw,d:g::r /var/lib/etvpn/sqldb 2>/dev/null || true
+            find /var/lib/etvpn/sqldb -type f -exec setfacl -m u:etvpnsql:rw {} \; 2>/dev/null || true
+            setfacl -m d:u:etvpnwww:r /var/lib/etvpn/port-share 2>/dev/null || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

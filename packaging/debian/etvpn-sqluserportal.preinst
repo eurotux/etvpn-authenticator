@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    install|upgrade)
+        getent group etvpnsqlwww >/dev/null || addgroup --system etvpnsqlwww
+        if ! getent passwd etvpnsqlwww >/dev/null; then
+            adduser --system --ingroup etvpnsqlwww --home /var/lib/etvpn/www-sqluserportal \
+                --no-create-home --shell /usr/sbin/nologin \
+                --gecos "ETVPN Authenticator SQL user portal web components identity" etvpnsqlwww
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

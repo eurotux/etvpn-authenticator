@@ -1,0 +1,41 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    install|upgrade)
+        # Create system groups
+        getent group etvpn >/dev/null || addgroup --system etvpn
+        getent group etvpnrun >/dev/null || addgroup --system etvpnrun
+        getent group etvpnwww >/dev/null || addgroup --system etvpnwww
+        getent group etvpnsql >/dev/null || addgroup --system etvpnsql
+
+        # Create system users
+        if ! getent passwd etvpn >/dev/null; then
+            adduser --system --ingroup etvpn --home /var/lib/etvpn \
+                --no-create-home --shell /usr/sbin/nologin \
+                --gecos "ETVPN Authenticator service identity" etvpn
+            adduser etvpn etvpnwww
+        fi
+        if ! getent passwd etvpnwww >/dev/null; then
+            adduser --system --ingroup etvpnwww --home /var/lib/etvpn/www \
+                --no-create-home --shell /usr/sbin/nologin \
+                --gecos "ETVPN Authenticator web components identity" etvpnwww
+        fi
+        if ! getent passwd etvpnsql >/dev/null; then
+            adduser --system --ingroup etvpnsql --home /var/lib/etvpn \
+                --no-create-home --shell /usr/sbin/nologin \
+                --gecos "ETVPN Authenticator SQL user portal service identity" etvpnsql
+            adduser etvpnsql etvpn
+        fi
+
+        # Add shared group membership
+        adduser etvpn etvpnrun 2>/dev/null || true
+        if getent passwd openvpn >/dev/null; then
+            adduser openvpn etvpnrun 2>/dev/null || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

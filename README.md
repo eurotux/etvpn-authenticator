@@ -12,4 +12,4 @@ MFA (Multi-Factor-Authentication) supported methods are:
 
 The MFA secrets are RSA encrypted on the backends and additional command line tools are provided for the respective management tasks.
 
-Basic setup instructions are provided in the [INSTALL.md](INSTALL.md) file, as well as a RPM spec file under `packaging/rpm` which has been tested and developed under Fedora Linux, but should work on other recent distributions provided they have the necessary (Perl and other) dependencies.
+Basic setup instructions are provided in the [INSTALL.md](INSTALL.md) file. Packaging files are provided under `packaging/` for both RPM (`packaging/rpm`) and Debian/Ubuntu (`packaging/debian`) based systems. The RPM spec has been tested and developed under Fedora Linux, but should work on other recent distributions provided they have the necessary (Perl and other) dependencies.

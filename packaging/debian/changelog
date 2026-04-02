@@ -1,0 +1,5 @@
+etvpn (0.7.6-1) unstable; urgency=medium
+
+  * Initial Debian packaging
+
+ -- Rodrigo Araujo <roa@eurotux.com>  Tue, 01 Apr 2025 18:00:00 +0100

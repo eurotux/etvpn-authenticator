@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        if getent passwd www-data >/dev/null; then
+            adduser www-data etvpnwww 2>/dev/null || true
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

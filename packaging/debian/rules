@@ -1,0 +1,89 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+
+ETVPN_USER = etvpn
+ETVPN_MAINGROUP = $(ETVPN_USER)
+ETVPN_SHAREDGROUP = etvpnrun
+ETVPNWWW_USER = etvpnwww
+ETVPNWWW_GROUP = $(ETVPNWWW_USER)
+ETVPNSQL_USER = etvpnsql
+ETVPNSQL_GROUP = $(ETVPNSQL_USER)
+ETVPNSQLWWW_USER = etvpnsqlwww
+ETVPNSQLWWW_GROUP = $(ETVPNSQLWWW_USER)
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	perl Makefile.PL INSTALLDIRS=vendor NO_PACKLIST=1 NO_PERLLOCAL=1
+
+override_dh_auto_install:
+	dh_auto_install -- \
+		ETVPN_SYSTEM_CONFDIR=/etc \
+		ETVPN_SYSTEM_LIBEXECDIR=/usr/libexec \
+		ETVPN_SYSTEM_SHAREDIR=/usr/share
+	# systemd units
+	install -d debian/etvpn/lib/systemd/system
+	install -d debian/etvpn/lib/systemd/system/etux-vpnserver-auth@etux-vpnserver.service.d
+	install -m 0644 systemd/system/etux-vpnserver-auth*.service \
+		debian/etvpn/lib/systemd/system/
+	install -m 0644 systemd/system/etux-vpnserver-auth@etux-vpnserver.service.d/*.conf \
+		debian/etvpn/lib/systemd/system/etux-vpnserver-auth@etux-vpnserver.service.d/
+	# sqluserportal systemd units
+	install -d debian/etvpn-sqluserportal/lib/systemd/system
+	install -d debian/etvpn-sqluserportal/lib/systemd/system/etux-vpnserver-sqluserportal@sqluserportal.service.d
+	install -m 0644 systemd/system/etux-vpnserver-sqluserportal*.service \
+		debian/etvpn-sqluserportal/lib/systemd/system/
+	install -m 0644 systemd/system/etux-vpnserver-sqluserportal@sqluserportal.service.d/*.conf \
+		debian/etvpn-sqluserportal/lib/systemd/system/etux-vpnserver-sqluserportal@sqluserportal.service.d/
+	# tmpfiles.d
+	install -d debian/etvpn/usr/lib/tmpfiles.d
+	install -m 0644 systemd/tmpfiles.d/etvpn.conf debian/etvpn/usr/lib/tmpfiles.d/
+	install -d debian/etvpn-uwsgi/usr/lib/tmpfiles.d
+	install -m 0644 systemd/tmpfiles.d/etvpnwww.conf debian/etvpn-uwsgi/usr/lib/tmpfiles.d/
+	install -d debian/etvpn-sqluserportal-uwsgi/usr/lib/tmpfiles.d
+	install -m 0644 systemd/tmpfiles.d/etvpnsqlwww.conf debian/etvpn-sqluserportal-uwsgi/usr/lib/tmpfiles.d/
+	# sqldb and ippool directories
+	install -d -m 2710 debian/etvpn/var/lib/etvpn/sqldb
+	install -d -m 2730 debian/etvpn/var/lib/etvpn/ippool
+	# port-share directory
+	install -d -m 0775 debian/etvpn-web/var/lib/etvpn/port-share
+	# cgi session directories
+	install -d -m 0710 debian/etvpn-uwsgi/var/lib/etvpn/cgi-sessions
+	install -d -m 2770 debian/etvpn-uwsgi/var/lib/etvpn/cgi-sessions/register
+	install -d -m 2770 debian/etvpn-uwsgi/var/lib/etvpn/cgi-sessions/authorize
+	install -d -m 2770 debian/etvpn-sqluserportal-uwsgi/var/lib/etvpn/www-sqluserportal/cgi-sessions
+	# compat client wrappers
+	install -d debian/etvpn-webauthn-compat-clients/usr/bin
+	install -m 0755 compat-client-wrappers/etvpn-nm debian/etvpn-webauthn-compat-clients/usr/bin/
+	install -m 0755 compat-client-wrappers/etvpn-ovpn debian/etvpn-webauthn-compat-clients/usr/bin/
+	# uwsgi configuration
+	install -d -m 0750 debian/etvpn-uwsgi/etc/uwsgi/apps-available
+	install -m 0640 webauthn/conf/uwsgi/etvpn.ini debian/etvpn-uwsgi/etc/uwsgi/apps-available/
+	install -d -m 0750 debian/etvpn-sqluserportal-uwsgi/etc/uwsgi/apps-available
+	install -m 0640 sqluserportal/conf/uwsgi/etvpn-sqluserportal.ini debian/etvpn-sqluserportal-uwsgi/etc/uwsgi/apps-available/
+	# apache2 configuration
+	install -d debian/etvpn-apache2-uwsgi/etc/apache2/conf-available
+	install -m 0644 webauthn/conf/apache/etux-vpnserver-uwsgi.conf \
+		debian/etvpn-apache2-uwsgi/etc/apache2/conf-available/
+	install -d debian/etvpn-sqluserportal-apache2-uwsgi/etc/apache2/conf-available
+	install -m 0644 sqluserportal/conf/apache/etux-vpnserver-sqluserportal-uwsgi.conf \
+		debian/etvpn-sqluserportal-apache2-uwsgi/etc/apache2/conf-available/
+	# nginx configuration
+	install -d debian/etvpn-nginx-uwsgi/etc/nginx/conf.d
+	install -d debian/etvpn-nginx-uwsgi/etc/nginx/snippets
+	install -m 0644 webauthn/conf/nginx/etux-vpnserver-uwsgi_upstream.conf \
+		debian/etvpn-nginx-uwsgi/etc/nginx/conf.d/
+	install -m 0644 webauthn/conf/nginx/etux-vpnserver-uwsgi_locations.conf \
+		debian/etvpn-nginx-uwsgi/etc/nginx/snippets/
+	install -d debian/etvpn-sqluserportal-nginx-uwsgi/etc/nginx/conf.d
+	install -d debian/etvpn-sqluserportal-nginx-uwsgi/etc/nginx/snippets
+	install -m 0644 sqluserportal/conf/nginx/etux-vpnserver-sqluserportal-uwsgi_upstream.conf \
+		debian/etvpn-sqluserportal-nginx-uwsgi/etc/nginx/conf.d/
+	install -m 0644 sqluserportal/conf/nginx/etux-vpnserver-sqluserportal-uwsgi_locations.conf \
+		debian/etvpn-sqluserportal-nginx-uwsgi/etc/nginx/snippets/
+
+override_dh_installsystemd:
+	dh_installsystemd --name=etux-vpnserver-auth --no-start --no-enable
+	dh_installsystemd -petvpn-sqluserportal --name=etux-vpnserver-sqluserportal --no-start --no-enable

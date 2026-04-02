@@ -1,0 +1,131 @@
+Source: etvpn
+Section: net
+Priority: optional
+Maintainer: Rodrigo Araujo <roa@eurotux.com>
+Build-Depends: debhelper-compat (= 13),
+               perl,
+               libextutils-makemaker-perl
+Standards-Version: 4.6.2
+Homepage: https://github.com/eurotux/etvpn-authenticator
+
+Package: etvpn
+Architecture: all
+Depends: ${perl:Depends},
+         ${misc:Depends},
+         etvpn-web (= ${binary:Version}),
+         openvpn (>= 2.5),
+         oathtool (>= 2.6.5),
+         acl,
+         libauthen-webauthn-perl,
+         libbytes-random-secure-perl,
+         libcbor-xs-perl,
+         libcgi-session-perl,
+         libconfig-inifiles-perl,
+         libconvert-base32-perl,
+         libcrypt-openssl-rsa-perl,
+         libdbi-perl,
+         libdigest-sha-perl,
+         libio-interactive-perl,
+         libjson-perl,
+         liblist-moreutils-perl,
+         libmime-base64-perl,
+         libnet-dns-perl,
+         libnet-ip-perl,
+         libnet-ldap-perl,
+         libstorable-perl,
+         libterm-readkey-perl,
+         liburi-perl
+Description: ETVPN Authenticator suite for OpenVPN servers
+ A suite of tools and a daemon that provide username, password and MFA
+ authentication to any OpenVPN Community edition server.
+
+Package: etvpn-webauthn-compat-clients
+Architecture: all
+Depends: ${misc:Depends},
+         expect
+Description: ETVPN Authenticator compatibility client wrappers
+ Provides wrappers for using the regular OpenVPN community client or
+ NetworkManager's nmcli to connect to an OpenVPN instance with
+ authentication controlled via ETVPN Authenticator daemon and WebAuthn
+ MFA challenge, for systems lacking a GUI that supports the OPENURL
+ client pending authentication method.
+ .
+ Note that you do not need to install this package in your OpenVPN server
+ (this is for client machines), nor do you need to install it if your GUI
+ already supports the aforementioned method, nor is it needed if you
+ aren't using WebAuthn challenges.
+
+Package: etvpn-web
+Architecture: all
+Depends: ${misc:Depends},
+         etvpn (= ${binary:Version}),
+         libplack-perl,
+         libhtml-template-perl
+Description: ETVPN Authenticator web components
+ Provides ETVPN Authenticator web components such as the ones necessary
+ for WebAuthn authentication.
+
+Package: etvpn-uwsgi
+Architecture: all
+Depends: ${misc:Depends},
+         etvpn-web (= ${binary:Version}),
+         uwsgi-plugin-psgi
+Description: ETVPN Authenticator uWSGI configuration
+ Provides necessary configuration and dependencies for using ETVPN
+ Authenticator web components with uWSGI.
+
+Package: etvpn-apache2-uwsgi
+Architecture: all
+Depends: ${misc:Depends},
+         etvpn-uwsgi (= ${binary:Version}),
+         apache2,
+         libapache2-mod-proxy-uwsgi
+Description: ETVPN Authenticator Apache2 and uWSGI configuration
+ Provides necessary configuration and dependencies for using ETVPN
+ Authenticator web components with Apache2 web server and uWSGI.
+
+Package: etvpn-nginx-uwsgi
+Architecture: all
+Depends: ${misc:Depends},
+         etvpn-uwsgi (= ${binary:Version}),
+         nginx
+Description: ETVPN Authenticator Nginx and uWSGI configuration
+ Provides necessary configuration and dependencies for using ETVPN
+ Authenticator web components with Nginx web server and uWSGI.
+
+Package: etvpn-sqluserportal
+Architecture: all
+Depends: ${misc:Depends},
+         etvpn (= ${binary:Version})
+Description: ETVPN Authenticator User Self-Service Portal
+ Provides a web portal that allows ETVPN Authenticator SQL based users
+ to change their passwords. The portal is composed by a daemon and a
+ PSGI web interface.
+
+Package: etvpn-sqluserportal-uwsgi
+Architecture: all
+Depends: ${misc:Depends},
+         etvpn-sqluserportal (= ${binary:Version}),
+         uwsgi-plugin-psgi
+Description: ETVPN Authenticator SQL User Portal uWSGI configuration
+ Provides necessary configuration and dependencies for using ETVPN
+ Authenticator User Self-Service Portal with uWSGI.
+
+Package: etvpn-sqluserportal-apache2-uwsgi
+Architecture: all
+Depends: ${misc:Depends},
+         etvpn-sqluserportal-uwsgi (= ${binary:Version}),
+         apache2,
+         libapache2-mod-proxy-uwsgi
+Description: ETVPN Authenticator SQL User Portal Apache2 and uWSGI configuration
+ Provides necessary configuration and dependencies for using ETVPN
+ Authenticator User Self-Service Portal with Apache2 web server and uWSGI.
+
+Package: etvpn-sqluserportal-nginx-uwsgi
+Architecture: all
+Depends: ${misc:Depends},
+         etvpn-sqluserportal-uwsgi (= ${binary:Version}),
+         nginx
+Description: ETVPN Authenticator SQL User Portal Nginx and uWSGI configuration
+ Provides necessary configuration and dependencies for using ETVPN
+ Authenticator User Self-Service Portal with Nginx web server and uWSGI.

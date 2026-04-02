@@ -5,7 +5,12 @@ perl Makefile.PL
 make install
 ```
 
-If you are packaging, you can pass the usual Makefile.PL options when running `perl Makefile.PL`. See your distribution packaging guidelines documentation. A .spec file is provided that should work for standard RPM based systems. Contributions for packaging for other distributions or other POSIX systems able to run a recent OpenVPN are welcome.
+If you are packaging, you can pass the usual Makefile.PL options when running `perl Makefile.PL`. See your distribution packaging guidelines documentation. Packaging files are provided under the `packaging/` directory:
+
+- **RPM** (`packaging/rpm`): A .spec file that should work for standard RPM based systems.
+- **Debian** (`packaging/debian`): Debian packaging files for Debian/Ubuntu based systems. Since `dpkg-buildpackage` expects a `debian/` directory at the repository root, create a symlink before building: `ln -s packaging/debian debian && dpkg-buildpackage -us -uc`
+
+Contributions for packaging for other distributions or other POSIX systems able to run a recent OpenVPN are welcome.
 
 If you use systemd you'll also want to place `daemon/*.{service,target}` in their corresponding places (e.g. `/lib/systemd/system` if you are packaging, `/usr/local/lib/systemd/system` if you are making a manual install). You'll need to adjust the ownership and permissions of some of the files unless you want to run the daemon as root (which is not recommended). If you are creating a container, most likely you won't need to worry about any of this, but you may find useful taking some hints from the provided .spec and systemd files when building your container image.
 
